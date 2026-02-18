@@ -1,5 +1,6 @@
 import { loadAssets } from "./engine/assets.js";
 import { InputManager } from "./engine/input.js";
+import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
 import { GameScene } from "./scenes/game-scene.js";
 
@@ -14,7 +15,11 @@ const assets = await loadAssets();
 // input
 const input = new InputManager();
 
-// --- Scene management ---
+// network
+const network = new NetworkManager();
+network.connect();
+
+// scene management
 let currentScene = null;
 
 function switchScene(scene) {
@@ -24,7 +29,7 @@ function switchScene(scene) {
 }
 
 // start
-const sceneContext = { canvas, ctx, assets, input, switchScene };
+const sceneContext = { canvas, ctx, assets, input, network, switchScene };
 
 switchScene(new GameScene(sceneContext));
 
