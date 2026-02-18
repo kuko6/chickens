@@ -1,4 +1,4 @@
-import { serveDir } from "jsr:@std/http/file-server";
+import { serveDir } from "@std/http/file-server";
 import { handleWebSocket } from "./ws.ts";
 
 Deno.serve({ port: 3000, hostname: "0.0.0.0" }, (req) => {

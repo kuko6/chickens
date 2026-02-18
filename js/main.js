@@ -4,22 +4,16 @@ import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
 import { GameScene } from "./scenes/game-scene.js";
 
-// canvas setup
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-ctx.imageSmoothingEnabled = false;
 
-// load assets
 const assets = await loadAssets();
 
-// input
 const input = new InputManager();
 
-// network
 const network = new NetworkManager();
 network.connect();
 
-// scene management
 let currentScene = null;
 
 function switchScene(scene) {
@@ -28,11 +22,11 @@ function switchScene(scene) {
   currentScene.enter();
 }
 
-// start
 const sceneContext = { canvas, ctx, assets, input, network, switchScene };
 
 switchScene(new GameScene(sceneContext));
 
+// start
 const loop = new GameLoop(
   (dt) => currentScene.update(dt),
   () => currentScene.render(),

@@ -3,7 +3,7 @@ import { RemoteChicken } from "../entities/remote-chicken.js";
 
 export class GameScene {
   /**
-   * @param {{canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, assets: Object, input: import('../engine/input.js').InputManager, network: import('../engine/network.js').NetworkManager}} context
+   * @param {{ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement,assets: Object, input: import('../engine/input.js').InputManager, network: import('../engine/network.js').NetworkManager}} context
    */
   constructor(context) {
     this.ctx = context.ctx;
