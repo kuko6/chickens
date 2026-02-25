@@ -39,11 +39,6 @@ export class BaseChicken {
       spriteWidth = 18;
       spriteHeight = 18;
       frameX = 0;
-    } else if (this.isClucking) {
-      sprite = this.assets.sprites.cluck;
-      spriteWidth = 21;
-      spriteHeight = 18;
-      frameX = this.cluckFrame * spriteWidth;
     } else if (this.isMoving) {
       sprite = this.assets.sprites.run;
       spriteWidth = 18;
@@ -60,5 +55,18 @@ export class BaseChicken {
     const drawHeight = this.height;
 
     drawTintedSprite(ctx, sprite, frameX, spriteWidth, spriteHeight, this.x, this.y, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
+
+    // cluck bubble — decorative only, excluded from collision
+    if (this.isClucking) {
+      const cluckingSprite = this.assets.sprites.cluck;
+      const cluckingSize = 18;
+      const cluckingFrameX = this.cluckFrame * cluckingSize;
+      const cluckingDraw = this.width; // 54px (same 3x scale)
+      const cluckingX = this.facingRight
+        ? this.x + drawWidth
+        : this.x - cluckingDraw;
+
+      drawTintedSprite(ctx, cluckingSprite, cluckingFrameX, cluckingSize, cluckingSize, cluckingX, this.y, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
+    }
   }
 }
