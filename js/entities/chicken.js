@@ -1,77 +1,81 @@
-import { TINT_COLORS, drawTintedSprite } from "./tints.js";
+import { BaseChicken } from "./base-chicken.js";
 
-export class Chicken {
+export class Chicken extends BaseChicken {
   /**
    * @param {import('../engine/input.js').InputManager} input
    * @param {{sprites: Object, sounds: Object}} assets
    * @param {{width: number, height: number}} bounds
    */
   constructor(input, assets, bounds) {
+    super(assets);
     this.input = input;
-    this.assets = assets;
     this.bounds = bounds;
 
-    // position & physics
-    this.x = 400;
-    this.width = 54;
-    this.height = 54;
-    this.groundY = 320;
-    this.y = this.groundY;
+    // movement
     this.speed = 4;
+    this.speedY = 3;
     this.velocityX = 0;
     this.velocityY = 0;
+    this.minY = 210;
+    this.maxY = bounds.height - this.height;
+
+    // jump / gravity
+    this.groundY = null;
     this.jumpForce = -8;
     this.gravity = 0.4;
-    this.isJumping = false;
 
-    // direction & movement
-    this.facingRight = true;
-    this.isMoving = false;
+    // start near the bottom
+    this.y = this.maxY;
 
     // run animation
-    this.currentFrame = 0;
     this.frameTimer = 0;
     this.frameDelay = 4;
 
     // cluck animation
-    this.isClucking = false;
-    this.cluckFrame = 0;
     this.cluckTimer = 0;
     this.cluckDelay = 6;
     this.cluckFrames = 4;
-
-    // tint (set via setColorIndex)
-    this.tint = null;
-  }
-
-  /** @param {number} colorIndex */
-  setColorIndex(colorIndex) {
-    this.tint = TINT_COLORS[colorIndex % TINT_COLORS.length];
   }
 
   /** @param {number} dt */
   update(dt) {
-    // horizontal movement
     this.velocityX = 0;
 
     if (this.input.isDown("ArrowLeft") || this.input.isDown("a") || this.input.isDown("A")) {
       this.velocityX = -this.speed;
       this.facingRight = false;
-      this.isMoving = true;
     }
     if (this.input.isDown("ArrowRight") || this.input.isDown("d") || this.input.isDown("D")) {
       this.velocityX = this.speed;
       this.facingRight = true;
-      this.isMoving = true;
     }
 
-    if (this.velocityX === 0) {
-      this.isMoving = false;
-      this.currentFrame = 0;
+    if (this.isJumping) {
+      // while airborne, only gravity affects Y — no walking input
+      this.velocityY += this.gravity;
+    } else {
+      // free Y movement on the ground
+      this.velocityY = 0;
+      if (this.input.isDown("ArrowUp") || this.input.isDown("w") || this.input.isDown("W")) {
+        this.velocityY = -this.speedY;
+      }
+      if (this.input.isDown("ArrowDown") || this.input.isDown("s") || this.input.isDown("S")) {
+        this.velocityY = this.speedY;
+      }
+
+      // jump — snap groundY to current position
+      if (this.input.isDown(" ")) {
+        this.groundY = this.y;
+        this.velocityY = this.jumpForce;
+        this.isJumping = true;
+      }
     }
+
+    this.isMoving = this.velocityX !== 0 || this.velocityY !== 0;
+    if (!this.isMoving) this.currentFrame = 0;
 
     // cluck
-    if (this.input.isDown("v") && !this.isClucking && !this.isJumping) {
+    if (this.input.isDown("v") && !this.isClucking) {
       this.isClucking = true;
       this.cluckFrame = 0;
       this.cluckTimer = 0;
@@ -90,29 +94,20 @@ export class Chicken {
       }
     }
 
-    // jump
-    if (this.input.isDown(" ") && !this.isJumping) {
-      this.velocityY = this.jumpForce;
-      this.isJumping = true;
-    }
-
-    // gravity
-    this.velocityY += this.gravity;
+    // move and clamp
+    this.x += this.velocityX;
     this.y += this.velocityY;
 
-    // land on ground
-    if (this.y >= this.groundY) {
+    if (this.x < 0) this.x = 0;
+    if (this.x > this.bounds.width - this.width) this.x = this.bounds.width - this.width;
+    if (!this.isJumping && this.y < this.minY) this.y = this.minY;
+    if (this.isJumping && this.y >= this.groundY) {
       this.y = this.groundY;
       this.velocityY = 0;
       this.isJumping = false;
+      this.groundY = null;
     }
-
-    // move and clamp to screen
-    this.x += this.velocityX;
-    if (this.x < 0) this.x = 0;
-    if (this.x > this.bounds.width - this.width) {
-      this.x = this.bounds.width - this.width;
-    }
+    if (this.y > this.maxY) this.y = this.maxY;
 
     // run animation frames
     if (this.isMoving) {
@@ -122,37 +117,5 @@ export class Chicken {
         this.currentFrame = (this.currentFrame + 1) % 2;
       }
     }
-  }
-
-  /** @param {CanvasRenderingContext2D} ctx */
-  render(ctx) {
-    let sprite, spriteWidth, spriteHeight, frameX;
-
-    if (this.isJumping) {
-      sprite = this.assets.sprites.jump;
-      spriteWidth = 18;
-      spriteHeight = 18;
-      frameX = 0;
-    } else if (this.isClucking) {
-      sprite = this.assets.sprites.cluck;
-      spriteWidth = 21;
-      spriteHeight = 18;
-      frameX = this.cluckFrame * spriteWidth;
-    } else if (this.isMoving) {
-      sprite = this.assets.sprites.run;
-      spriteWidth = 18;
-      spriteHeight = 18;
-      frameX = this.currentFrame * spriteWidth;
-    } else {
-      sprite = this.assets.sprites.idle;
-      spriteWidth = 18;
-      spriteHeight = 18;
-      frameX = 0;
-    }
-
-    const drawWidth = this.width * (spriteWidth / 18);
-    const drawHeight = this.height;
-
-    drawTintedSprite(ctx, sprite, frameX, spriteWidth, spriteHeight, this.x, this.y, drawWidth, drawHeight, this.facingRight, this.tint);
   }
 }

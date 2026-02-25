@@ -27,7 +27,10 @@ export class GameScene {
     };
 
     this.network.onJoin = (id, colorIndex) => {
-      this.remoteChickens.set(id, new RemoteChicken(this.assets, colorIndex));
+      const remote = new RemoteChicken(this.assets, colorIndex);
+      remote.minY = this.chicken.minY;
+      remote.maxY = this.chicken.maxY;
+      this.remoteChickens.set(id, remote);
     };
 
     this.network.onLeave = (id) => {
@@ -52,13 +55,17 @@ export class GameScene {
 
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // draw ground line
-    const groundLineY = this.chicken.groundY + this.chicken.height;
-    ctx.strokeStyle = "#228B22";
+    // fill ground area below horizon
+    const horizonY = this.chicken.minY;
+    ctx.fillStyle = "#c8e6a0";
+    ctx.fillRect(0, horizonY, this.canvas.width, this.canvas.height - horizonY);
+
+    // draw horizon line
+    ctx.strokeStyle = "#272744";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(0, groundLineY);
-    ctx.lineTo(this.canvas.width, groundLineY);
+    ctx.moveTo(0, horizonY);
+    ctx.lineTo(this.canvas.width, horizonY);
     ctx.stroke();
 
     // draw remote chickens

@@ -1,6 +1,7 @@
 // Index 0 = no tint (base chicken), 1+ = colored
 export const TINT_COLORS = [
-  null,                          // base (no tint)
+  null,                         // base (no tint)
+  // "rgba(0, 0, 0, 0.6)",         // black
   "rgba(0, 100, 255, 0.4)",     // blue
   "rgba(255, 40, 40, 0.4)",     // red
   "rgba(40, 200, 40, 0.4)",     // green
