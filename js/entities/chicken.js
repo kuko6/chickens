@@ -23,9 +23,13 @@ export class Chicken extends BaseChicken {
     this.groundY = null;
     this.jumpForce = -8;
     this.gravity = 0.4;
+    this.jumpHoldFrames = 0;
+    this.maxJumpHoldFrames = 7;
+    this.jumpHoldBoost = -0.2;
 
-    // start near the bottom
-    this.y = this.maxY;
+    // start centered in the walkable area
+    this.x = (this.bounds.width - this.width) / 2;
+    this.y = (this.minY + this.maxY) / 2;
 
     // run animation
     this.frameTimer = 0;
@@ -39,6 +43,8 @@ export class Chicken extends BaseChicken {
 
   /** @param {number} dt */
   update(dt) {
+    const jumpHeld = this.input.isDown(" ");
+
     this.velocityX = 0;
 
     if (this.input.isDown("ArrowLeft") || this.input.isDown("a") || this.input.isDown("A")) {
@@ -52,6 +58,10 @@ export class Chicken extends BaseChicken {
 
     if (this.isJumping) {
       // while airborne, only gravity affects Y — no walking input
+      if (jumpHeld && this.velocityY < 0 && this.jumpHoldFrames < this.maxJumpHoldFrames) {
+        this.velocityY += this.jumpHoldBoost;
+        this.jumpHoldFrames++;
+      }
       this.velocityY += this.gravity;
     } else {
       // free Y movement on the ground
@@ -64,10 +74,11 @@ export class Chicken extends BaseChicken {
       }
 
       // jump — snap groundY to current position
-      if (this.input.isDown(" ")) {
+      if (jumpHeld) {
         this.groundY = this.y;
         this.velocityY = this.jumpForce;
         this.isJumping = true;
+        this.jumpHoldFrames = 0;
       }
     }
 
@@ -106,6 +117,7 @@ export class Chicken extends BaseChicken {
       this.velocityY = 0;
       this.isJumping = false;
       this.groundY = null;
+      this.jumpHoldFrames = 0;
     }
     if (this.y > this.maxY) this.y = this.maxY;
 
