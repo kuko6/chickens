@@ -11,11 +11,11 @@ export class Chicken {
 
     // Position & physics
     this.x = 400;
-    this.width = 48;
-    this.height = 48;
-    this.groundY = 328;
+    this.width = 54;
+    this.height = 54;
+    this.groundY = 320;
     this.y = this.groundY;
-    this.speed = 3;
+    this.speed = 4;
     this.velocityX = 0;
     this.velocityY = 0;
     this.jumpForce = -8;
@@ -120,27 +120,27 @@ export class Chicken {
 
     if (this.isJumping) {
       sprite = this.assets.sprites.jump;
-      spriteWidth = 16;
-      spriteHeight = 16;
+      spriteWidth = 18;
+      spriteHeight = 18;
       frameX = 0;
     } else if (this.isClucking) {
       sprite = this.assets.sprites.cluck;
       spriteWidth = 21;
-      spriteHeight = 16;
+      spriteHeight = 18;
       frameX = this.cluckFrame * spriteWidth;
     } else if (this.isMoving) {
       sprite = this.assets.sprites.run;
-      spriteWidth = 16;
-      spriteHeight = 16;
+      spriteWidth = 18;
+      spriteHeight = 18;
       frameX = this.currentFrame * spriteWidth;
     } else {
       sprite = this.assets.sprites.idle;
-      spriteWidth = 16;
-      spriteHeight = 16;
+      spriteWidth = 18;
+      spriteHeight = 18;
       frameX = 0;
     }
 
-    const drawWidth = this.width * (spriteWidth / 16);
+    const drawWidth = this.width * (spriteWidth / 18);
     const drawHeight = this.height;
 
     ctx.save();
