@@ -16,7 +16,7 @@ export class Chicken extends BaseChicken {
     this.speedY = 3;
     this.velocityX = 0;
     this.velocityY = 0;
-    this.minY = 210;
+    this.minY = 200;
     this.maxY = bounds.height - this.height;
 
     // jump / gravity

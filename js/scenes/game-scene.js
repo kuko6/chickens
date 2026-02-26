@@ -56,7 +56,7 @@ export class GameScene {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // fill ground area below horizon
-    const horizonY = this.chicken.minY;
+    const horizonY = this.chicken.minY + 25;
     ctx.fillStyle = "#c8e6a0";
     ctx.fillRect(0, horizonY, this.canvas.width, this.canvas.height - horizonY);
 
