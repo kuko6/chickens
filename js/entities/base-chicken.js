@@ -6,8 +6,8 @@ export class BaseChicken {
 
     this.x = 400;
     this.y = 320;
-    this.width = 54;
-    this.height = 54;
+    this.width = 60;
+    this.height = 60;
 
     this.facingRight = true;
     this.isMoving = false;
@@ -36,22 +36,22 @@ export class BaseChicken {
 
     if (this.isJumping) {
       sprite = this.assets.sprites.jump;
-      spriteWidth = 18;
-      spriteHeight = 18;
+      spriteWidth = 20;
+      spriteHeight = 20;
       frameX = 0;
     } else if (this.isMoving) {
       sprite = this.assets.sprites.run;
-      spriteWidth = 18;
-      spriteHeight = 18;
+      spriteWidth = 20;
+      spriteHeight = 20;
       frameX = this.currentFrame * spriteWidth;
     } else {
       sprite = this.assets.sprites.idle;
-      spriteWidth = 18;
-      spriteHeight = 18;
+      spriteWidth = 20;
+      spriteHeight = 20;
       frameX = 0;
     }
 
-    const drawWidth = this.width * (spriteWidth / 18);
+    const drawWidth = this.width * (spriteWidth / 20);
     const drawHeight = this.height;
 
     drawTintedSprite(ctx, sprite, frameX, spriteWidth, spriteHeight, this.x, this.y, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
@@ -61,7 +61,7 @@ export class BaseChicken {
       const cluckingSprite = this.assets.sprites.cluck;
       const cluckingSize = 18;
       const cluckingFrameX = this.cluckFrame * cluckingSize;
-      const cluckingDraw = this.width; // 54px (same 3x scale)
+      const cluckingDraw = this.width;
       const cluckingX = this.facingRight
         ? this.x + drawWidth
         : this.x - cluckingDraw;

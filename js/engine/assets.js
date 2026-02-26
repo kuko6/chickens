@@ -18,9 +18,13 @@ function loadImage(src) {
  */
 export async function loadAssets() {
   const [idle, run, jump, cluck] = await Promise.all([
-    loadImage("assets/sprites/chickens.png"),
-    loadImage("assets/sprites/chickens_run.png"),
-    loadImage("assets/sprites/chickens_jump.png"),
+    // loadImage("assets/sprites/chickens.png"),
+    // loadImage("assets/sprites/chickens_run.png"),
+    // loadImage("assets/sprites/chickens_jump.png"),
+    // loadImage("assets/sprites/chickens_cluck.png"),
+    loadImage("assets/sprites/imro_idle.png"),
+    loadImage("assets/sprites/imro_run.png"),
+    loadImage("assets/sprites/imro_jump.png"),
     loadImage("assets/sprites/chickens_cluck.png"),
   ]);
 
