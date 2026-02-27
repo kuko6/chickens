@@ -6,8 +6,12 @@ export class BaseChicken {
 
     this.x = 400;
     this.y = 320;
-    this.width = 60;
-    this.height = 60;
+
+    this.spriteSetName = "default";
+    this.spriteWidth = 18;
+    this.spriteHeight = 18;
+    this.width = this.spriteWidth * 3;
+    this.height = this.spriteHeight * 3;
 
     this.facingRight = true;
     this.isMoving = false;
@@ -19,54 +23,74 @@ export class BaseChicken {
 
     this.tint = null;
     this.opacity = 1;
+    this.name = "";
 
     // depth bounds for parallax scaling
     this.minY = 210;
     this.maxY = 346;
   }
 
+  /** @param {string} name */
+  setSpriteSet(name) {
+    const set = this.assets.spriteSets[name];
+    if (!set) return;
+    this.spriteSetName = name;
+    this.spriteWidth = set.spriteWidth;
+    this.spriteHeight = set.spriteHeight;
+    this.width = this.spriteWidth * 3;
+    this.height = this.spriteHeight * 3;
+  }
+
   /** @param {number} colorIndex */
   setColorIndex(colorIndex) {
+    this.colorIndex = colorIndex;
     this.tint = TINT_COLORS[colorIndex % TINT_COLORS.length];
   }
 
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
-    let sprite, spriteWidth, spriteHeight, frameX;
+    const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
+    let sprite, frameX;
 
     if (this.isJumping) {
-      sprite = this.assets.sprites.jump;
-      spriteWidth = 20;
-      spriteHeight = 20;
+      sprite = set.jump;
       frameX = 0;
     } else if (this.isMoving) {
-      sprite = this.assets.sprites.run;
-      spriteWidth = 20;
-      spriteHeight = 20;
-      frameX = this.currentFrame * spriteWidth;
+      sprite = set.run;
+      frameX = this.currentFrame * this.spriteWidth;
     } else {
-      sprite = this.assets.sprites.idle;
-      spriteWidth = 20;
-      spriteHeight = 20;
+      sprite = set.idle;
       frameX = 0;
     }
 
-    const drawWidth = this.width * (spriteWidth / 20);
+    const drawWidth = this.width;
     const drawHeight = this.height;
 
-    drawTintedSprite(ctx, sprite, frameX, spriteWidth, spriteHeight, this.x, this.y, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
+    drawTintedSprite(ctx, sprite, frameX, this.spriteWidth, this.spriteHeight, this.x, this.y, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
 
     // cluck bubble — decorative only, excluded from collision
     if (this.isClucking) {
-      const cluckingSprite = this.assets.sprites.cluck;
-      const cluckingSize = 18;
-      const cluckingFrameX = this.cluckFrame * cluckingSize;
-      const cluckingDraw = this.width;
-      const cluckingX = this.facingRight
-        ? this.x + drawWidth
-        : this.x - cluckingDraw;
+      const cluckSprite = set.cluck || this.assets.sprites.cluck;
+      if (cluckSprite) {
+        const cluckingSize = 18;
+        const cluckingFrameX = this.cluckFrame * cluckingSize;
+        const cluckingDraw = this.width;
+        const cluckingX = this.facingRight
+          ? this.x + drawWidth
+          : this.x - cluckingDraw;
 
-      drawTintedSprite(ctx, cluckingSprite, cluckingFrameX, cluckingSize, cluckingSize, cluckingX, this.y, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
+        drawTintedSprite(ctx, cluckSprite, cluckingFrameX, cluckingSize, cluckingSize, cluckingX, this.y, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
+      }
+    }
+
+    // draw name above chicken
+    if (this.name) {
+      ctx.save();
+      ctx.font = "bold 12px Arial";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#272744";
+      ctx.fillText(this.name, this.x + drawWidth / 2, this.y - 6);
+      ctx.restore();
     }
   }
 }

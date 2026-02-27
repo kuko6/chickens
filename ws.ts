@@ -1,5 +1,8 @@
 const MAX_PLAYERS = 6;
-const clients = new Map<string, { ws: WebSocket; colorIndex: number }>();
+const clients = new Map<
+  string,
+  { ws: WebSocket; colorIndex: number; spriteSet: string; name: string }
+>();
 let nextId = 1;
 
 /** Returns the first free color index, or -1 if full. */
@@ -37,9 +40,12 @@ export function handleWebSocket(req: Request): Response {
       return;
     }
 
-    clients.set(id, { ws: socket, colorIndex });
+    clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "" });
     socket.send(JSON.stringify({ type: "id", id, colorIndex }));
-    broadcast(JSON.stringify({ type: "join", id, colorIndex }), id);
+    broadcast(
+      JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }),
+      id,
+    );
     // Tell the new client about existing players
     for (const [otherId, other] of clients) {
       if (otherId !== id) {
@@ -48,6 +54,8 @@ export function handleWebSocket(req: Request): Response {
             type: "join",
             id: otherId,
             colorIndex: other.colorIndex,
+            spriteSet: other.spriteSet,
+            name: other.name,
           }),
         );
       }
@@ -60,6 +68,17 @@ export function handleWebSocket(req: Request): Response {
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
     data.id = id;
+
+    // Store customization on the server so new joiners see it
+    if (data.type === "customize") {
+      const client = clients.get(id);
+      if (client) {
+        if (data.spriteSet !== undefined) client.spriteSet = data.spriteSet;
+        if (data.colorIndex !== undefined) client.colorIndex = data.colorIndex;
+        if (data.name !== undefined) client.name = data.name;
+      }
+    }
+
     broadcast(JSON.stringify(data), id);
   };
 

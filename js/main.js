@@ -5,7 +5,17 @@ import { GameLoop } from "./engine/game-loop.js";
 import { GameScene } from "./scenes/game-scene.js";
 
 const canvas = document.getElementById("gameCanvas");
+const dpr = window.devicePixelRatio || 1;
+const logicalWidth = canvas.width;
+const logicalHeight = canvas.height;
+canvas.width = logicalWidth * dpr;
+canvas.height = logicalHeight * dpr;
+canvas.style.width = `${logicalWidth}px`;
+canvas.style.height = `${logicalHeight}px`;
 const ctx = canvas.getContext("2d");
+ctx.scale(dpr, dpr);
+canvas.logicalWidth = logicalWidth;
+canvas.logicalHeight = logicalHeight;
 
 const assets = await loadAssets();
 

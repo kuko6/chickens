@@ -86,17 +86,17 @@ export class Chicken extends BaseChicken {
     if (!this.isMoving) this.currentFrame = 0;
 
     // cluck
-    if (this.input.isDown("v") && !this.isClucking) {
+    const cluckSound = (this.assets.spriteSets[this.spriteSetName] || this.assets.sprites).cluckSound;
+    if (this.input.isDown("v") && !this.isClucking && cluckSound) {
       this.isClucking = true;
       this.cluckFrame = 0;
       this.cluckTimer = 0;
-      this.assets.sounds.cluck.currentTime = 0;
-      this.assets.sounds.cluck.play().catch(() => {});
+      cluckSound.currentTime = 0;
+      cluckSound.play().catch(() => {});
     }
 
     if (this.isClucking) {
-      const sound = this.assets.sounds.cluck;
-      if (sound.ended || sound.paused) {
+      if (!cluckSound || cluckSound.ended || cluckSound.paused) {
         this.isClucking = false;
         this.cluckFrame = 0;
       } else {
