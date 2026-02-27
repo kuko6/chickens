@@ -28,7 +28,7 @@ export async function loadAssets() {
     loadImage("assets/sprites/chickens_cluck.png"),
   ]);
 
-  const cluckSound = new Audio("assets/sounds/chicken_cluck.mp3");
+  const cluckSound = new Audio("assets/sounds/rooster.mp3");
 
   return {
     sprites: { idle, run, jump, cluck },

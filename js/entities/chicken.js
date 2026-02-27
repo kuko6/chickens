@@ -37,7 +37,7 @@ export class Chicken extends BaseChicken {
 
     // cluck animation
     this.cluckTimer = 0;
-    this.cluckDelay = 6;
+    this.cluckDelay = 8;
     this.cluckFrames = 4;
   }
 
@@ -95,12 +95,15 @@ export class Chicken extends BaseChicken {
     }
 
     if (this.isClucking) {
-      this.cluckTimer++;
-      if (this.cluckTimer >= this.cluckDelay) {
-        this.cluckTimer = 0;
-        this.cluckFrame++;
-        if (this.cluckFrame >= this.cluckFrames) {
-          this.isClucking = false;
+      const sound = this.assets.sounds.cluck;
+      if (sound.ended || sound.paused) {
+        this.isClucking = false;
+        this.cluckFrame = 0;
+      } else {
+        this.cluckTimer++;
+        if (this.cluckTimer >= this.cluckDelay) {
+          this.cluckTimer = 0;
+          this.cluckFrame = (this.cluckFrame + 1) % this.cluckFrames;
         }
       }
     }
