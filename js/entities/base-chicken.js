@@ -88,8 +88,22 @@ export class BaseChicken {
       ctx.save();
       ctx.font = "bold 12px Arial";
       ctx.textAlign = "center";
-      ctx.fillStyle = "#272744";
-      ctx.fillText(this.name, this.x + drawWidth / 2, this.y - 6);
+
+      const nameX = this.x + drawWidth / 2;
+      const nameY = this.y - 6;
+      const textWidth = ctx.measureText(this.name).width;
+      const padding = 3;
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.fillRect(
+        nameX - textWidth / 2 - padding,
+        nameY - 10 - padding,
+        textWidth + padding * 2,
+        12 + padding * 2
+      );
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(this.name, nameX, nameY);
       ctx.restore();
     }
   }
