@@ -47,6 +47,7 @@ export class NetworkManager {
       type: "state",
       x: chicken.x,
       y: chicken.y,
+      airY: chicken.airY,
       facingRight: chicken.facingRight,
       isMoving: chicken.isMoving,
       isJumping: chicken.isJumping,

@@ -97,13 +97,12 @@ export class GameScene {
     ctx.lineTo(this.canvasW, horizonY);
     ctx.stroke();
 
-    // draw remote chickens
-    for (const remote of this.remoteChickens.values()) {
-      remote.render(ctx);
+    // draw all chickens sorted by y so lower ones appear in front
+    const allChickens = [this.chicken, ...this.remoteChickens.values()];
+    allChickens.sort((a, b) => a.y - b.y);
+    for (const chicken of allChickens) {
+      chicken.render(ctx);
     }
-
-    // draw local chicken on top
-    this.chicken.render(ctx);
 
     // draw overlay last (on top of everything)
     if (this.overlay) this.overlay.render(ctx);

@@ -17,6 +17,7 @@ export class RemoteChicken extends BaseChicken {
   applyState(state) {
     this.x = state.x;
     this.y = state.y;
+    this.airY = state.airY || 0;
     this.facingRight = state.facingRight;
     this.isMoving = state.isMoving;
     this.isJumping = state.isJumping;

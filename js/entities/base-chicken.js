@@ -6,6 +6,7 @@ export class BaseChicken {
 
     this.x = 400;
     this.y = 320;
+    this.airY = 0;
 
     this.spriteSetName = "default";
     this.spriteWidth = 18;
@@ -65,8 +66,9 @@ export class BaseChicken {
 
     const drawWidth = this.width;
     const drawHeight = this.height;
+    const drawY = this.y + this.airY;
 
-    drawTintedSprite(ctx, sprite, frameX, this.spriteWidth, this.spriteHeight, this.x, this.y, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
+    drawTintedSprite(ctx, sprite, frameX, this.spriteWidth, this.spriteHeight, this.x, drawY, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
 
     // cluck bubble — decorative only, excluded from collision
     if (this.isClucking) {
@@ -79,7 +81,7 @@ export class BaseChicken {
           ? this.x + drawWidth
           : this.x - cluckingDraw;
 
-        drawTintedSprite(ctx, cluckSprite, cluckingFrameX, cluckingSize, cluckingSize, cluckingX, this.y, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
+        drawTintedSprite(ctx, cluckSprite, cluckingFrameX, cluckingSize, cluckingSize, cluckingX, drawY, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
       }
     }
 
@@ -90,7 +92,7 @@ export class BaseChicken {
       ctx.textAlign = "center";
 
       const nameX = this.x + drawWidth / 2;
-      const nameY = this.y - 6;
+      const nameY = drawY - 6;
       const textWidth = ctx.measureText(this.name).width;
       const padding = 3;
 

@@ -20,7 +20,6 @@ export class Chicken extends BaseChicken {
     this.maxY = bounds.height - this.height;
 
     // jump / gravity
-    this.groundY = null;
     this.jumpForce = -8;
     this.gravity = 0.4;
     this.jumpHoldFrames = 0;
@@ -73,9 +72,8 @@ export class Chicken extends BaseChicken {
         this.velocityY = this.speedY;
       }
 
-      // jump — snap groundY to current position
+      // jump
       if (jumpHeld) {
-        this.groundY = this.y;
         this.velocityY = this.jumpForce;
         this.isJumping = true;
         this.jumpHoldFrames = 0;
@@ -110,18 +108,22 @@ export class Chicken extends BaseChicken {
 
     // move and clamp
     this.x += this.velocityX;
-    this.y += this.velocityY;
+
+    if (this.isJumping) {
+      this.airY += this.velocityY;
+      if (this.airY >= 0) {
+        this.airY = 0;
+        this.velocityY = 0;
+        this.isJumping = false;
+        this.jumpHoldFrames = 0;
+      }
+    } else {
+      this.y += this.velocityY;
+    }
 
     if (this.x < 0) this.x = 0;
     if (this.x > this.bounds.width - this.width) this.x = this.bounds.width - this.width;
-    if (!this.isJumping && this.y < this.minY) this.y = this.minY;
-    if (this.isJumping && this.y >= this.groundY) {
-      this.y = this.groundY;
-      this.velocityY = 0;
-      this.isJumping = false;
-      this.groundY = null;
-      this.jumpHoldFrames = 0;
-    }
+    if (this.y < this.minY) this.y = this.minY;
     if (this.y > this.maxY) this.y = this.maxY;
 
     // run animation frames
