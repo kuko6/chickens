@@ -5,13 +5,14 @@ import { SPRITE_SETS } from "../engine/assets.js";
 
 export class GameScene {
   /**
-   * @param {{ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement,assets: Object, input: import('../engine/input.js').InputManager, network: import('../engine/network.js').NetworkManager}} context
+   * @param {{ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, viewport: { width: number, height: number }, assets: Object, input: import('../engine/input.js').InputManager, network: import('../engine/network.js').NetworkManager}} context
    */
   constructor(context) {
     this.ctx = context.ctx;
     this.canvas = context.canvas;
-    this.canvasW = context.canvas.logicalWidth || context.canvas.width;
-    this.canvasH = context.canvas.logicalHeight || context.canvas.height;
+    this.viewport = context.viewport;
+    this.canvasW = this.viewport.width;
+    this.canvasH = this.viewport.height;
     this.assets = context.assets;
     this.input = context.input;
     this.network = context.network;
@@ -103,9 +104,6 @@ export class GameScene {
     for (const chicken of allChickens) {
       chicken.render(ctx);
     }
-
-    // draw overlay last (on top of everything)
-    if (this.overlay) this.overlay.render(ctx);
   }
 
   exit() {

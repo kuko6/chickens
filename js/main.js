@@ -5,17 +5,9 @@ import { GameLoop } from "./engine/game-loop.js";
 import { GameScene } from "./scenes/game-scene.js";
 
 const canvas = document.getElementById("gameCanvas");
-const dpr = window.devicePixelRatio || 1;
-const logicalWidth = canvas.width;
-const logicalHeight = canvas.height;
-canvas.width = logicalWidth * dpr;
-canvas.height = logicalHeight * dpr;
-canvas.style.width = `${logicalWidth}px`;
-canvas.style.height = `${logicalHeight}px`;
 const ctx = canvas.getContext("2d");
-ctx.scale(dpr, dpr);
-canvas.logicalWidth = logicalWidth;
-canvas.logicalHeight = logicalHeight;
+
+const viewport = configureCanvasForHiDPI(canvas, ctx);
 
 const assets = await loadAssets();
 
@@ -32,7 +24,7 @@ function switchScene(scene) {
   currentScene.enter();
 }
 
-const sceneContext = { canvas, ctx, assets, input, network, switchScene };
+const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene };
 
 switchScene(new GameScene(sceneContext));
 
@@ -43,3 +35,22 @@ const loop = new GameLoop(
 );
 
 loop.start();
+
+/**
+ * Keep logical game coordinates stable while rendering at device pixel ratio.
+ * @param {HTMLCanvasElement} canvas
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function configureCanvasForHiDPI(canvas, ctx) {
+  const width = canvas.width;
+  const height = canvas.height;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  return { width, height, dpr };
+}
