@@ -1,20 +1,60 @@
+const KEY_MAP = {
+  ArrowLeft: "left",
+  KeyA: "left",
+  ArrowRight: "right",
+  KeyD: "right",
+  ArrowUp: "up",
+  KeyW: "up",
+  ArrowDown: "down",
+  KeyS: "down",
+  Space: "jump",
+  KeyV: "cluck",
+};
+
 export class InputManager {
   constructor() {
     /** @type {Record<string, boolean>} */
-    this.keys = {};
+    this.actions = {};
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === " ") e.preventDefault();
-      this.keys[e.key] = true;
-    });
+    this.onKeyDown = (e) => this.handleKeyEvent(e, true);
+    this.onKeyUp = (e) => this.handleKeyEvent(e, false);
+    this.onBlur = () => this.clear();
+    this.onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") this.clear();
+    };
 
-    document.addEventListener("keyup", (e) => {
-      this.keys[e.key] = false;
-    });
+    window.addEventListener("keydown", this.onKeyDown);
+    window.addEventListener("keyup", this.onKeyUp);
+    window.addEventListener("blur", this.onBlur); // window loses focus
+    document.addEventListener("visibilitychange", this.onVisibilityChange); // switch tabs
   }
 
-  /** @param {string} key */
-  isDown(key) {
-    return !!this.keys[key];
+  /**
+   * @param {KeyboardEvent} e
+   * @param {boolean} isDown
+   */
+  handleKeyEvent(e, isDown) {
+    const action = KEY_MAP[e.code];
+    if (!action) return;
+
+    e.preventDefault();
+    this.actions[action] = isDown;
+  }
+
+  clear() {
+    this.actions = {};
+  }
+
+  /** @param {string} action */
+  isDown(action) {
+    return Boolean(this.actions[action]);
+  }
+
+  destroy() {
+    window.removeEventListener("keydown", this.onKeyDown);
+    window.removeEventListener("keyup", this.onKeyUp);
+    window.removeEventListener("blur", this.onBlur);
+    document.removeEventListener("visibilitychange", this.onVisibilityChange);
+    this.clear();
   }
 }

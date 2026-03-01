@@ -42,18 +42,12 @@ export class Chicken extends BaseChicken {
 
   /** @param {number} dt */
   update(dt) {
-    const jumpHeld = this.input.isDown(" ");
+    const jumpHeld = this.input.isDown("jump");
+    const inputX = (this.input.isDown("right") ? 1 : 0) - (this.input.isDown("left") ? 1 : 0);
+    const inputY = (this.input.isDown("down") ? 1 : 0) - (this.input.isDown("up") ? 1 : 0);
 
-    this.velocityX = 0;
-
-    if (this.input.isDown("ArrowLeft") || this.input.isDown("a") || this.input.isDown("A")) {
-      this.velocityX = -this.speed;
-      this.facingRight = false;
-    }
-    if (this.input.isDown("ArrowRight") || this.input.isDown("d") || this.input.isDown("D")) {
-      this.velocityX = this.speed;
-      this.facingRight = true;
-    }
+    this.velocityX = inputX * this.speed;
+    if (inputX !== 0) this.facingRight = inputX > 0;
 
     if (this.isJumping) {
       // while airborne, only gravity affects Y — no walking input
@@ -64,19 +58,21 @@ export class Chicken extends BaseChicken {
       this.velocityY += this.gravity;
     } else {
       // free Y movement on the ground
-      this.velocityY = 0;
-      if (this.input.isDown("ArrowUp") || this.input.isDown("w") || this.input.isDown("W")) {
-        this.velocityY = -this.speedY;
-      }
-      if (this.input.isDown("ArrowDown") || this.input.isDown("s") || this.input.isDown("S")) {
-        this.velocityY = this.speedY;
-      }
+      this.velocityY = inputY * this.speedY;
 
       // jump
       if (jumpHeld) {
         this.velocityY = this.jumpForce;
         this.isJumping = true;
         this.jumpHoldFrames = 0;
+      } else if (inputX !== 0 && inputY !== 0) {
+        // keep diagonal movement at the same total speed as horizontal movement
+        const magnitude = Math.hypot(this.velocityX, this.velocityY);
+        if (magnitude > 0) {
+          const scale = this.speed / magnitude;
+          this.velocityX *= scale;
+          this.velocityY *= scale;
+        }
       }
     }
 
@@ -85,7 +81,7 @@ export class Chicken extends BaseChicken {
 
     // cluck
     const cluckSound = (this.assets.spriteSets[this.spriteSetName] || this.assets.sprites).cluckSound;
-    if (this.input.isDown("v") && !this.isClucking && cluckSound) {
+    if (this.input.isDown("cluck") && !this.isClucking && cluckSound) {
       this.isClucking = true;
       this.cluckFrame = 0;
       this.cluckTimer = 0;
