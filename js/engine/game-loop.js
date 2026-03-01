@@ -16,7 +16,7 @@ export class GameLoop {
   start() {
     this.running = true;
     this.lastTime = performance.now();
-    requestAnimationFrame((t) => this._loop(t));
+    requestAnimationFrame((t) => this.runLoop(t));
   }
 
   stop() {
@@ -24,7 +24,7 @@ export class GameLoop {
   }
 
   /** @param {number} timestamp */
-  _loop(timestamp) {
+  runLoop(timestamp) {
     if (!this.running) return;
 
     const delta = timestamp - this.lastTime;
@@ -37,6 +37,6 @@ export class GameLoop {
     }
 
     this.render();
-    requestAnimationFrame((t) => this._loop(t));
+    requestAnimationFrame((t) => this.runLoop(t));
   }
 }

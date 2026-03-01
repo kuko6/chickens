@@ -19,7 +19,7 @@
             background-color: #ffffff;
             font-family: Arial, sans-serif;
         }
-        canvas {
+        #gameCanvas {
             border: 1px solid #000000;
             background-color: #deebff;
             image-rendering: pixelated;
@@ -33,8 +33,9 @@
     </style>
 </head>
 <body>
-    <!-- <h1>Chicken Game Demo</h1> -->
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="gameView">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+    </div>
     <div class="controls">
         <p>Use <strong>Arrow Left</strong> and <strong>Arrow Right</strong> to move the chicken</p>
         <p>Press <strong>Spacebar</strong> to jump</p>

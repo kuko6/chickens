@@ -6,6 +6,7 @@ export class NetworkManager {
     this.onId = null;
     this.onJoin = null;
     this.onLeave = null;
+    this.onCustomize = null;
   }
 
   connect() {
@@ -22,7 +23,7 @@ export class NetworkManager {
           break;
         case "join":
           this.remotePlayers.set(data.id, null);
-          this.onJoin?.(data.id, data.colorIndex);
+          this.onJoin?.(data.id, data.colorIndex, data.spriteSet, data.name);
           break;
         case "leave":
           this.remotePlayers.delete(data.id);
@@ -30,6 +31,9 @@ export class NetworkManager {
           break;
         case "state":
           this.remotePlayers.set(data.id, data);
+          break;
+        case "customize":
+          this.onCustomize?.(data.id, data.spriteSet, data.colorIndex, data.name);
           break;
       }
     };
@@ -43,12 +47,26 @@ export class NetworkManager {
       type: "state",
       x: chicken.x,
       y: chicken.y,
+      airY: chicken.airY,
       facingRight: chicken.facingRight,
       isMoving: chicken.isMoving,
       isJumping: chicken.isJumping,
       isClucking: chicken.isClucking,
       currentFrame: chicken.currentFrame,
       cluckFrame: chicken.cluckFrame,
+      spriteSet: chicken.spriteSetName,
+    }));
+  }
+
+  /** Send customization change to server */
+  sendCustomize(spriteSet, colorIndex, name) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    this.ws.send(JSON.stringify({
+      type: "customize",
+      spriteSet,
+      colorIndex,
+      name,
     }));
   }
 }
