@@ -1,6 +1,6 @@
 import { Chicken } from "../entities/chicken.js";
-import { RemoteChicken } from "../entities/remote-chicken.js";
 import { CustomizeOverlay } from "../ui/customize-overlay.js";
+import { NetworkSync } from "../engine/network-sync.js";
 import { SPRITE_SETS } from "../engine/assets.js";
 
 export class GameScene {
@@ -18,8 +18,7 @@ export class GameScene {
     this.network = context.network;
     this.chicken = null;
     this.overlay = null;
-    /** @type {Map<string, RemoteChicken>} */
-    this.remoteChickens = new Map();
+    this.networkSync = null;
   }
 
   enter() {
@@ -41,43 +40,15 @@ export class GameScene {
     });
     this.overlay.selectedSpriteSet = randomSet;
 
-    this.network.onId = (colorIndex) => {
-      this.chicken.setColorIndex(colorIndex);
-      this.overlay.selectedColorIndex = colorIndex;
-      // send initial appearance to others
-      this.network.sendCustomize(this.chicken.spriteSetName, colorIndex, this.chicken.name);
-    };
-
-    this.network.onJoin = (id, colorIndex, spriteSet, name) => {
-      const remote = new RemoteChicken(this.assets, colorIndex, spriteSet, name);
-      remote.minY = this.chicken.minY;
-      remote.maxY = this.chicken.maxY;
-      this.remoteChickens.set(id, remote);
-    };
-
-    this.network.onLeave = (id) => {
-      this.remoteChickens.delete(id);
-    };
-
-    this.network.onCustomize = (id, spriteSet, colorIndex, name) => {
-      const remote = this.remoteChickens.get(id);
-      if (!remote) return;
-      if (spriteSet !== undefined) remote.setSpriteSet(spriteSet);
-      if (colorIndex !== undefined) remote.setColorIndex(colorIndex);
-      if (name !== undefined) remote.name = name;
-    };
+    // network sync
+    this.networkSync = new NetworkSync(this.network, this.assets);
+    this.networkSync.init(this.chicken, this.overlay);
   }
 
   /** @param {number} dt */
   update(dt) {
     this.chicken.update(dt);
-    this.network.sendState(this.chicken);
-
-    // apply latest network state to remote chickens
-    for (const [id, remote] of this.remoteChickens) {
-      const state = this.network.remotePlayers.get(id);
-      if (state) remote.applyState(state);
-    }
+    this.networkSync.update(this.chicken);
   }
 
   render() {
@@ -99,7 +70,7 @@ export class GameScene {
     ctx.stroke();
 
     // draw all chickens sorted by y so lower ones appear in front
-    const allChickens = [this.chicken, ...this.remoteChickens.values()];
+    const allChickens = [this.chicken, ...this.networkSync.getRemoteChickens()];
     allChickens.sort((a, b) => a.y - b.y);
     for (const chicken of allChickens) {
       chicken.render(ctx);
@@ -108,7 +79,10 @@ export class GameScene {
 
   exit() {
     this.chicken = null;
-    this.remoteChickens.clear();
+    if (this.networkSync) {
+      this.networkSync.destroy();
+      this.networkSync = null;
+    }
     if (this.overlay) {
       this.overlay.destroy();
       this.overlay = null;
