@@ -21,10 +21,10 @@ export const SPRITE_SETS = [
     spriteHeight: 18,
     sound: "assets/sounds/chicken_cluck.mp3",
     paths: {
-      idle: "assets/sprites/chickens.png",
-      run: "assets/sprites/chickens_run.png",
-      jump: "assets/sprites/chickens_jump.png",
-      cluck: "assets/sprites/chickens_cluck.png",
+      idle: "assets/sprites/chickens/base.png",
+      run: "assets/sprites/chickens/base_run.png",
+      jump: "assets/sprites/chickens/base_jump.png",
+      cluck: "assets/sprites/chickens/cluck.png",
     },
   },
   {
@@ -34,10 +34,10 @@ export const SPRITE_SETS = [
     spriteHeight: 20,
     sound: "assets/sounds/rooster.mp3",
     paths: {
-      idle: "assets/sprites/imro_idle.png",
-      run: "assets/sprites/imro_run.png",
-      jump: "assets/sprites/imro_jump.png",
-      cluck: "assets/sprites/chickens_cluck.png",
+      idle: "assets/sprites/chickens/imro_idle.png",
+      run: "assets/sprites/chickens/imro_run.png",
+      jump: "assets/sprites/chickens/imro_jump.png",
+      cluck: "assets/sprites/chickens/cluck.png",
     },
   },
 ];
