@@ -1,7 +1,9 @@
 import { Chicken } from "../entities/chicken.js";
+import { Cloud } from "../entities/cloud.js";
 import { CustomizeOverlay } from "../ui/customize-overlay.js";
 import { NetworkSync } from "../engine/network-sync.js";
 import { SPRITE_SETS } from "../engine/assets.js";
+import { SeededRandom } from "../engine/seeded-random.js";
 
 export class GameScene {
   /**
@@ -19,6 +21,9 @@ export class GameScene {
     this.chicken = null;
     this.overlay = null;
     this.networkSync = null;
+    this.cameraX = 0;
+    this.rng = null;
+    this.cloudCache = new Map(); // chunkIndex -> Cloud[]
   }
 
   enter() {
@@ -43,12 +48,58 @@ export class GameScene {
     // network sync
     this.networkSync = new NetworkSync(this.network, this.assets);
     this.networkSync.init(this.chicken, this.overlay);
+
+    // world seed — shared across all clients via the server
+    const mapSeed = this.network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
+    this.rng = new SeededRandom(mapSeed);
+
+    // cloud chunk config — small chunks so clouds stay dense despite parallax
+    this.cloudChunkSize = 200;
+    this.cloudCache = new Map();
+
+    // ground tile config
+    this.tileSize = 16;
+    this.tileScale = 3;
+    this.drawSize = this.tileSize * this.tileScale;
+    this.groundRows = Math.ceil((this.canvasH - (this.chicken.minY + 30)) / this.drawSize);
+  }
+
+  /** Generate clouds for a given chunk index, cached */
+  _getCloudsForChunk(chunkIndex) {
+    if (this.cloudCache.has(chunkIndex)) return this.cloudCache.get(chunkIndex);
+
+    const clouds = [];
+    const cloudImages = this.assets.environment.clouds;
+    const hash = this.rng.hash(chunkIndex, 999);
+    const count = hash % 4; // 0, 1, or 2 clouds per chunk
+
+    for (let i = 0; i < count; i++) {
+      const h = this.rng.hash(chunkIndex, i);
+      const image = cloudImages[h % cloudImages.length];
+      const depth = ((h >> 4) % 100) / 100;
+      const x = chunkIndex * this.cloudChunkSize + ((h >> 8) % 1000) / 1000 * this.cloudChunkSize;
+      const y = ((h >> 12) % 130);
+      clouds.push(new Cloud(image, x, y, depth));
+    }
+    // sort so far clouds render behind near clouds
+    clouds.sort((a, b) => a.opacity - b.opacity);
+
+    this.cloudCache.set(chunkIndex, clouds);
+    return clouds;
   }
 
   /** @param {number} dt */
   update(dt) {
     this.chicken.update(dt);
     this.networkSync.update(this.chicken);
+    // center camera on chicken
+    this.cameraX = this.chicken.x + this.chicken.width / 2 - this.canvasW / 2;
+    // drift visible clouds
+    for (const clouds of this.cloudCache.values()) {
+      for (const cloud of clouds) {
+        cloud.update();
+      }
+    }
   }
 
   render() {
@@ -56,24 +107,56 @@ export class GameScene {
 
     ctx.clearRect(0, 0, this.canvasW, this.canvasH);
 
-    // fill ground area below horizon
+    // draw clouds behind ground — generate per chunk, render visible ones
+    // use the max parallax range (0.5) to determine visible world-x span for clouds
+    const cloudWorldLeft = this.cameraX * 0.2;
+    const cloudWorldRight = this.cameraX * 0.5 + this.canvasW;
+    const startChunk = Math.floor(cloudWorldLeft / this.cloudChunkSize) - 1;
+    const endChunk = Math.floor(cloudWorldRight / this.cloudChunkSize) + 1;
+    for (let ci = startChunk; ci <= endChunk; ci++) {
+      for (const cloud of this._getCloudsForChunk(ci)) {
+        cloud.render(ctx, this.cameraX);
+      }
+    }
+
+    // draw tiled ground (infinite scroll)
     const horizonY = this.chicken.minY + 30;
-    ctx.fillStyle = "#c8e6a0";
-    ctx.fillRect(0, horizonY, this.canvasW, this.canvasH - horizonY);
+    const { tileSize, tileScale, drawSize, groundRows } = this;
+    const tileset = this.assets.environment.groundTileset;
 
-    // draw horizon line
-    ctx.strokeStyle = "#272744";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, horizonY);
-    ctx.lineTo(this.canvasW, horizonY);
-    ctx.stroke();
+    // figure out which world columns are visible
+    const startCol = Math.floor(this.cameraX / drawSize);
+    const visibleCols = Math.ceil(this.canvasW / drawSize) + 1;
 
-    // draw all chickens sorted by y so lower ones appear in front
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    for (let row = 0; row < groundRows; row++) {
+      const isEdge = row === 0;
+      for (let i = 0; i < visibleCols; i++) {
+        const worldCol = startCol + i;
+        const hash = this.rng.hash(worldCol, row);
+        const tileRow = isEdge
+          ? (hash >> 2) % 4
+          : 4 + (hash >> 2) % 5;
+        const tileCol = tileRow === 8 ? 0 : hash % 2;
+        const screenX = worldCol * drawSize - this.cameraX;
+        ctx.drawImage(
+          tileset,
+          tileCol * tileSize, tileRow * tileSize, tileSize, tileSize,
+          Math.round(screenX), horizonY + row * drawSize, drawSize, drawSize,
+        );
+      }
+    }
+    ctx.restore();
+
+    // draw all chickens sorted by y, offset by camera
     const allChickens = [this.chicken, ...this.networkSync.getRemoteChickens()];
     allChickens.sort((a, b) => a.y - b.y);
     for (const chicken of allChickens) {
+      const origX = chicken.x;
+      chicken.x = origX - this.cameraX;
       chicken.render(ctx);
+      chicken.x = origX;
     }
   }
 

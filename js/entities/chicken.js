@@ -117,8 +117,6 @@ export class Chicken extends BaseChicken {
       this.y += this.velocityY;
     }
 
-    if (this.x < 0) this.x = 0;
-    if (this.x > this.bounds.width - this.width) this.x = this.bounds.width - this.width;
     if (this.y < this.minY) this.y = this.minY;
     if (this.y > this.maxY) this.y = this.maxY;
 

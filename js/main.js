@@ -15,6 +15,7 @@ const input = new InputManager();
 
 const network = new NetworkManager();
 network.connect();
+await network.ready;
 
 let currentScene = null;
 

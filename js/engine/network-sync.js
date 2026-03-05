@@ -24,6 +24,11 @@ export class NetworkSync {
       this.network.sendCustomize(chicken.spriteSetName, colorIndex, chicken.name);
     };
 
+    // If the id message arrived before init (e.g. awaiting ready), apply now
+    if (this.network.colorIndex !== null) {
+      this.network.onId(this.network.colorIndex);
+    }
+
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {
       const remote = new RemoteChicken(this.assets, colorIndex, spriteSet, name);
       remote.minY = chicken.minY;
