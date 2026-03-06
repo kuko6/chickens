@@ -33,16 +33,21 @@ export class GameScene {
     });
 
     // random initial appearance
-    const randomSet = SPRITE_SETS[Math.floor(Math.random() * SPRITE_SETS.length)].name;
+    const randomSet =
+      SPRITE_SETS[Math.floor(Math.random() * SPRITE_SETS.length)].name;
     this.chicken.setSpriteSet(randomSet);
 
     // customization overlay
-    this.overlay = new CustomizeOverlay(this.canvas, this.assets, (spriteSet, colorIndex, name) => {
-      this.chicken.setSpriteSet(spriteSet);
-      this.chicken.setColorIndex(colorIndex);
-      this.chicken.name = name;
-      this.network.sendCustomize(spriteSet, colorIndex, name);
-    });
+    this.overlay = new CustomizeOverlay(
+      this.canvas,
+      this.assets,
+      (spriteSet, colorIndex, name) => {
+        this.chicken.setSpriteSet(spriteSet);
+        this.chicken.setColorIndex(colorIndex);
+        this.chicken.name = name;
+        this.network.sendCustomize(spriteSet, colorIndex, name);
+      },
+    );
     this.overlay.selectedSpriteSet = randomSet;
 
     // network sync
@@ -50,7 +55,8 @@ export class GameScene {
     this.networkSync.init(this.chicken, this.overlay);
 
     // world seed — shared across all clients via the server
-    const mapSeed = this.network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
+    const mapSeed = this.network.mapSeed ??
+      Math.floor(Math.random() * 0x7fffffff);
     this.rng = new SeededRandom(mapSeed);
 
     // cloud chunk config — small chunks so clouds stay dense despite parallax
@@ -61,11 +67,21 @@ export class GameScene {
     this.tileSize = 16;
     this.tileScale = 3;
     this.drawSize = this.tileSize * this.tileScale;
-    this.groundRows = Math.ceil((this.canvasH - (this.chicken.minY + 30)) / this.drawSize);
+    this.groundRows = Math.ceil(
+      (this.canvasH - (this.chicken.minY + 30)) / this.drawSize,
+    );
+
+    // tileset layout: row ranges and column count per row
+    this.tilesetConfig = {
+      surfaceRows: [0, 1, 2, 3],
+      undergroundRows: [4, 5, 6, 7, 8],
+      cols: 2,
+      singleColRows: new Set([8]),
+    };
   }
 
   /** Generate clouds for a given chunk index, cached */
-  _getCloudsForChunk(chunkIndex) {
+  getCloudsForChunk(chunkIndex) {
     if (this.cloudCache.has(chunkIndex)) return this.cloudCache.get(chunkIndex);
 
     const clouds = [];
@@ -77,8 +93,9 @@ export class GameScene {
       const h = this.rng.hash(chunkIndex, i);
       const image = cloudImages[h % cloudImages.length];
       const depth = ((h >> 4) % 100) / 100;
-      const x = chunkIndex * this.cloudChunkSize + ((h >> 8) % 1000) / 1000 * this.cloudChunkSize;
-      const y = ((h >> 12) % 130);
+      const x = chunkIndex * this.cloudChunkSize +
+        ((h >> 8) % 1000) / 1000 * this.cloudChunkSize;
+      const y = (h >> 12) % 130;
       clouds.push(new Cloud(image, x, y, depth));
     }
     // sort so far clouds render behind near clouds
@@ -114,14 +131,14 @@ export class GameScene {
     const startChunk = Math.floor(cloudWorldLeft / this.cloudChunkSize) - 1;
     const endChunk = Math.floor(cloudWorldRight / this.cloudChunkSize) + 1;
     for (let ci = startChunk; ci <= endChunk; ci++) {
-      for (const cloud of this._getCloudsForChunk(ci)) {
+      for (const cloud of this.getCloudsForChunk(ci)) {
         cloud.render(ctx, this.cameraX);
       }
     }
 
     // draw tiled ground (infinite scroll)
     const horizonY = this.chicken.minY + 30;
-    const { tileSize, tileScale, drawSize, groundRows } = this;
+    const { tileSize, drawSize, groundRows } = this;
     const tileset = this.assets.environment.groundTileset;
 
     // figure out which world columns are visible
@@ -130,20 +147,25 @@ export class GameScene {
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
+    const { surfaceRows, undergroundRows, singleColRows } = this.tilesetConfig;
     for (let row = 0; row < groundRows; row++) {
-      const isEdge = row === 0;
+      const candidates = row === 0 ? surfaceRows : undergroundRows;
       for (let i = 0; i < visibleCols; i++) {
         const worldCol = startCol + i;
         const hash = this.rng.hash(worldCol, row);
-        const tileRow = isEdge
-          ? (hash >> 2) % 4
-          : 4 + (hash >> 2) % 5;
-        const tileCol = tileRow === 8 ? 0 : hash % 2;
+        const tileRow = candidates[hash % candidates.length];
+        const tileCol = singleColRows.has(tileRow) ? 0 : (hash >> 8) % 2;
         const screenX = worldCol * drawSize - this.cameraX;
         ctx.drawImage(
           tileset,
-          tileCol * tileSize, tileRow * tileSize, tileSize, tileSize,
-          Math.round(screenX), horizonY + row * drawSize, drawSize, drawSize,
+          tileCol * tileSize,
+          tileRow * tileSize,
+          tileSize,
+          tileSize,
+          Math.round(screenX),
+          horizonY + row * drawSize,
+          drawSize,
+          drawSize,
         );
       }
     }
