@@ -10,10 +10,12 @@ const Y_MAX = 125;
  * Clouds are placed on a repeating strip (canvasW * WIDTH_MULT) that wraps seamlessly.
  * Each cloud's position is derived from rng.hash(layer, i) — a stateless hash seeded
  * by the server's mapSeed, so all clients see the same sky. The hash returns a 32-bit
- * integer; different bit ranges are shifted out (>> 8, >> 12) to produce independent
- * x-jitter and y values from a single call. Some slots are skipped (1 in SKIP_MODULO)
- * so clouds don't feel evenly spaced. Two layers with different parallax and drift
- * speeds create a sense of depth.
+ * integer from which we determine independent x-jitter and y values. Some slots are
+ * skipped (1 in SKIP_MODULO) so clouds don't feel evenly spaced. Two layers with
+ * different parallax and drift speeds create a sense of depth.
+ *
+ * Players who join the game too late might see a different sky, because on one screen
+ * the clouds may have already drifted away.
  */
 export class CloudLayer {
   /**
@@ -28,8 +30,6 @@ export class CloudLayer {
     this.drift = [0, 0];
 
     const count = Math.floor(this.stripWidth / CLOUD_SPACING);
-    console.log(count)
-
     for (let layer = 0; layer < 2; layer++) {
       for (let i = 0; i < count; i++) {
         const h = rng.hash(layer, i);

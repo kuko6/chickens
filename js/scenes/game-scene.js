@@ -60,9 +60,10 @@ export class GameScene {
       (this.canvasH - (this.chicken.minY + 30)) / this.drawSize,
     );
 
-    // tileset layout: tile counts per strip
-    this.edgeTileCount = 6;   // ground_edge.png: 96px / 16px
-    this.groundTileCount = 6; // ground.png: 96px / 16px
+    // derive tile counts from tileset width
+    const { groundTileset, groundEdgeTileset } = this.assets.environment;
+    this.edgeTileCount = groundEdgeTileset.width / this.tileSize;
+    this.groundTileCount = groundTileset.width / this.tileSize;
   }
 
   /** @param {number} dt */
