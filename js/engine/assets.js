@@ -71,7 +71,7 @@ export async function loadAssets() {
   const [groundTileset, groundEdgeTileset, fenceSlim, fenceWide] = await Promise.all([
     loadImage("assets/sprites/tilesets/ground.png"),
     loadImage("assets/sprites/tilesets/ground_edge.png"),
-    loadImage("assets/sprites/tilesets/fence_slim.png"),
+    loadImage("assets/sprites/tilesets/fence_slim2.png"),
     loadImage("assets/sprites/tilesets/fence_wide.png"),
   ]);
 

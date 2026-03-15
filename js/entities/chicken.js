@@ -16,15 +16,15 @@ export class Chicken extends BaseChicken {
     this.speedY = 3;
     this.velocityX = 0;
     this.velocityY = 0;
-    this.minY = 200;
+    this.minY = 176;
     this.maxY = bounds.height - this.height;
 
     // jump / gravity
-    this.jumpForce = -8;
-    this.gravity = 0.4;
+    this.jumpForce = -10;
+    this.gravity = 0.6;
     this.jumpHoldFrames = 0;
-    this.maxJumpHoldFrames = 7;
-    this.jumpHoldBoost = -0.2;
+    this.maxJumpHoldFrames = 8;
+    this.jumpHoldBoost = -0.4;
 
     // start centered in the walkable area
     this.x = (this.bounds.width - this.width) / 2;
@@ -38,6 +38,9 @@ export class Chicken extends BaseChicken {
     this.cluckTimer = 0;
     this.cluckDelay = 8;
     this.cluckFrames = 4;
+
+    // when true, chicken always faces right and plays run animation
+    this.autoRun = false;
   }
 
   /** @param {number} dt */
@@ -78,8 +81,13 @@ export class Chicken extends BaseChicken {
       }
     }
 
-    this.isMoving = this.velocityX !== 0 || this.velocityY !== 0;
-    if (!this.isMoving) this.currentFrame = 0;
+    if (this.autoRun) {
+      this.facingRight = true;
+      this.isMoving = true;
+    } else {
+      this.isMoving = this.velocityX !== 0 || this.velocityY !== 0;
+      if (!this.isMoving) this.currentFrame = 0;
+    }
 
     // cluck
     const cluckSound = (this.assets.spriteSets[this.spriteSetName] || this.assets.sprites).cluckSound;

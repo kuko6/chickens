@@ -2,7 +2,7 @@ import { loadAssets } from "./engine/assets.js";
 import { InputManager } from "./engine/input.js";
 import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
-import { GameScene } from "./scenes/game-scene.js";
+import { LobbyScene } from "./scenes/lobby-scene.js";
 import { CloudLayer } from "./scenes/cloud-layer.js";
 import { SeededRandom } from "./engine/seeded-random.js";
 
@@ -42,7 +42,8 @@ const mapSeed = network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
 const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
-const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene, cloudLayer, rng };
+const horizonY = 208; // ground starts here — 400 - 208 = 192 = 4 rows of 48px tiles
+const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene, cloudLayer, rng, horizonY };
 
 let currentScene = null;
 function switchScene(scene) {
@@ -51,7 +52,7 @@ function switchScene(scene) {
   currentScene.enter();
 }
 
-switchScene(new GameScene(sceneContext));
+switchScene(new LobbyScene(sceneContext));
 
 // start
 const loop = new GameLoop(

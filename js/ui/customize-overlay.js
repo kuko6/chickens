@@ -5,6 +5,10 @@ const ICON_SIZE = 28;
 const ICON_MARGIN = 10;
 const PANEL_WIDTH = 220;
 
+// Index used to represent the imro option in the style selector.
+// Tint indices 0..TINT_COLORS.length-1 use the default sprite, this one uses imro.
+const IMRO_STYLE_INDEX = TINT_COLORS.length;
+
 export class CustomizeOverlay {
   /**
    * @param {HTMLCanvasElement} canvas
@@ -21,12 +25,10 @@ export class CustomizeOverlay {
     this.selectedColorIndexValue = 0;
     this.playerName = "";
 
-    this.spriteButtons = new Map();
-    this.colorButtons = [];
+    this.styleButtons = [];
 
     this.buildDom();
-    this.syncSpriteSelection();
-    this.syncColorSelection();
+    this.syncStyleSelection();
   }
 
   get selectedSpriteSet() {
@@ -34,8 +36,8 @@ export class CustomizeOverlay {
   }
 
   set selectedSpriteSet(value) {
-    this.selectedSpriteSetValue = this.normalizeSpriteSet(value);
-    this.syncSpriteSelection();
+    this.selectedSpriteSetValue = value;
+    this.syncStyleSelection();
   }
 
   get selectedColorIndex() {
@@ -43,8 +45,14 @@ export class CustomizeOverlay {
   }
 
   set selectedColorIndex(value) {
-    this.selectedColorIndexValue = this.normalizeColorIndex(value);
-    this.syncColorSelection();
+    this.selectedColorIndexValue = value;
+    this.syncStyleSelection();
+  }
+
+  /** Returns the internal style index that represents the current spriteSet + colorIndex combo. */
+  get activeStyleIndex() {
+    if (this.selectedSpriteSetValue === "imro") return IMRO_STYLE_INDEX;
+    return this.selectedColorIndexValue;
   }
 
   buildDom() {
@@ -106,76 +114,7 @@ export class CustomizeOverlay {
       box-sizing: border-box;
     `;
 
-    const skinLabel = this.label("Skin:");
-    const skinRow = document.createElement("div");
-    skinRow.style.cssText = `
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    `;
-
-    for (const set of SPRITE_SETS) {
-      const option = document.createElement("button");
-      option.type = "button";
-      option.dataset.spriteSet = set.name;
-      option.style.cssText = `
-        border: 2px solid #b9c2d3;
-        border-radius: 6px;
-        background: #f5f8ff;
-        padding: 4px;
-        cursor: pointer;
-        width: 42px;
-        height: 42px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      option.addEventListener("click", () => {
-        this.selectedSpriteSet = set.name;
-        this.emitChange();
-      });
-
-      const preview = document.createElement("canvas");
-      preview.width = 32;
-      preview.height = 32;
-      preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
-      this.drawSpritePreview(preview, set);
-
-      option.appendChild(preview);
-      skinRow.appendChild(option);
-      this.spriteButtons.set(set.name, option);
-    }
-
-    const tintLabel = this.label("Tint:");
-    const tintRow = document.createElement("div");
-    tintRow.style.cssText = `
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    `;
-
-    for (let i = 0; i < TINT_COLORS.length; i++) {
-      const swatch = document.createElement("button");
-      swatch.type = "button";
-      swatch.dataset.colorIndex = String(i);
-      swatch.style.cssText = `
-        border: 2px solid #9aa4b8;
-        border-radius: 999px;
-        width: 22px;
-        height: 22px;
-        padding: 0;
-        cursor: pointer;
-        background: ${this.solidColor(TINT_COLORS[i])};
-      `;
-      swatch.addEventListener("click", () => {
-        this.selectedColorIndex = i;
-        this.emitChange();
-      });
-      tintRow.appendChild(swatch);
-      this.colorButtons.push(swatch);
-    }
-
+    // name input
     const nameLabel = this.label("Name:");
     this.nameInput = document.createElement("input");
     this.nameInput.type = "text";
@@ -189,6 +128,7 @@ export class CustomizeOverlay {
       padding: 4px 6px;
       font-size: 13px;
       outline: none;
+      margin-bottom: 10px;
     `;
     this.nameInput.addEventListener("input", () => {
       this.playerName = this.nameInput.value;
@@ -197,12 +137,78 @@ export class CustomizeOverlay {
     this.nameInput.addEventListener("keydown", (e) => e.stopPropagation());
     this.nameInput.addEventListener("keyup", (e) => e.stopPropagation());
 
-    this.panel.appendChild(skinLabel);
-    this.panel.appendChild(skinRow);
-    this.panel.appendChild(tintLabel);
-    this.panel.appendChild(tintRow);
+    // unified style row: tint swatches + imro sprite
+    const styleLabel = this.label("Style:");
+    const styleRow = document.createElement("div");
+    styleRow.style.cssText = `
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    `;
+
+    // tint color swatches (each selects default sprite + that tint)
+    for (let i = 0; i < TINT_COLORS.length; i++) {
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.style.cssText = `
+        border: 2px solid #9aa4b8;
+        border-radius: 999px;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        cursor: pointer;
+        background: ${this.solidColor(TINT_COLORS[i])};
+      `;
+      swatch.addEventListener("click", () => {
+        this.selectedSpriteSetValue = "default";
+        this.selectedColorIndexValue = i;
+        this.syncStyleSelection();
+        this.emitChange();
+      });
+      styleRow.appendChild(swatch);
+      this.styleButtons.push({ el: swatch, styleIndex: i });
+    }
+
+    // imro option — shown as a small sprite preview
+    const imroSet = SPRITE_SETS.find((s) => s.name === "imro");
+    if (imroSet) {
+      const imroBtn = document.createElement("button");
+      imroBtn.type = "button";
+      imroBtn.style.cssText = `
+        border: 2px solid #9aa4b8;
+        border-radius: 6px;
+        background: #f5f8ff;
+        padding: 2px;
+        cursor: pointer;
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      imroBtn.addEventListener("click", () => {
+        this.selectedSpriteSetValue = "imro";
+        this.selectedColorIndexValue = 0;
+        this.syncStyleSelection();
+        this.emitChange();
+      });
+
+      const preview = document.createElement("canvas");
+      preview.width = 20;
+      preview.height = 20;
+      preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
+      this.drawSpritePreview(preview, imroSet);
+
+      imroBtn.appendChild(preview);
+      styleRow.appendChild(imroBtn);
+      this.styleButtons.push({ el: imroBtn, styleIndex: IMRO_STYLE_INDEX });
+    }
+
     this.panel.appendChild(nameLabel);
     this.panel.appendChild(this.nameInput);
+    this.panel.appendChild(styleLabel);
+    this.panel.appendChild(styleRow);
 
     this.root.appendChild(this.gearButton);
     this.root.appendChild(this.panel);
@@ -252,31 +258,13 @@ export class CustomizeOverlay {
     if (open) this.nameInput.focus();
   }
 
-  syncSpriteSelection() {
-    for (const [name, button] of this.spriteButtons) {
-      const selected = name === this.selectedSpriteSetValue;
-      button.style.borderColor = selected ? "#272744" : "#b9c2d3";
-      button.style.background = selected ? "rgba(100, 180, 255, 0.25)" : "#f5f8ff";
+  syncStyleSelection() {
+    const active = this.activeStyleIndex;
+    for (const { el, styleIndex } of this.styleButtons) {
+      const selected = styleIndex === active;
+      el.style.borderColor = selected ? "#272744" : "#9aa4b8";
+      el.style.transform = selected ? "scale(1.08)" : "scale(1)";
     }
-  }
-
-  syncColorSelection() {
-    this.colorButtons.forEach((button, index) => {
-      const selected = index === this.selectedColorIndexValue;
-      button.style.borderColor = selected ? "#272744" : "#9aa4b8";
-      button.style.transform = selected ? "scale(1.08)" : "scale(1)";
-    });
-  }
-
-  normalizeSpriteSet(value) {
-    if (this.spriteButtons.has(value)) return value;
-    return SPRITE_SETS[0].name;
-  }
-
-  normalizeColorIndex(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.min(TINT_COLORS.length - 1, Math.floor(n)));
   }
 
   solidColor(tint) {
