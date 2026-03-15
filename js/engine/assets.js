@@ -17,11 +17,11 @@ export const SPRITE_SETS = [
   {
     name: "default",
     label: "Chicken",
-    spriteWidth: 18,
-    spriteHeight: 18,
+    spriteWidth: 20,
+    spriteHeight: 20,
     sound: "assets/sounds/chicken_cluck.mp3",
     paths: {
-      idle: "assets/sprites/chickens/base.png",
+      idle: "assets/sprites/chickens/base_idle.png",
       run: "assets/sprites/chickens/base_run.png",
       jump: "assets/sprites/chickens/base_jump.png",
       cluck: "assets/sprites/chickens/cluck.png",
@@ -67,10 +67,12 @@ export async function loadAssets() {
 
   const spriteSets = Object.fromEntries(setEntries);
 
-  // Load ground tilesets
-  const [groundTileset, groundEdgeTileset] = await Promise.all([
+  // Load ground tilesets and obstacle sprites
+  const [groundTileset, groundEdgeTileset, fenceSlim, fenceWide] = await Promise.all([
     loadImage("assets/sprites/tilesets/ground.png"),
     loadImage("assets/sprites/tilesets/ground_edge.png"),
+    loadImage("assets/sprites/tilesets/fence_slim.png"),
+    loadImage("assets/sprites/tilesets/fence_wide.png"),
   ]);
 
   // Load cloud images
@@ -92,6 +94,6 @@ export async function loadAssets() {
     // backward compat alias
     sprites: spriteSets["default"],
     sounds: { cluck: spriteSets["default"].cluckSound },
-    environment: { clouds, groundTileset, groundEdgeTileset },
+    environment: { clouds, groundTileset, groundEdgeTileset, obstacles: [fenceSlim, fenceWide] },
   };
 }
