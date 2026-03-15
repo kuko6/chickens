@@ -1,41 +1,38 @@
 export class Cloud {
   /**
    * @param {HTMLImageElement} image
-   * @param {number} x       world-space X
+   * @param {number} x       strip-space X
    * @param {number} y       screen-space Y
-   * @param {number} depth   0 = far away, 1 = close
+   * @param {number} layer   0 = back (far), 1 = front (near)
    */
-  constructor(image, x, y, depth) {
+  constructor(image, x, y, layer) {
     this.image = image;
     this.x = x;
     this.y = y;
-    this.depth = depth;
+    this.layer = layer;
 
-    // depth drives scale and opacity — kept subtle
-    this.scale = 1.25 + depth * 2.0;       // 1.25x .. 3.25x
-    this.opacity = 0.45 + depth * 0.35;    // 0.45 .. 0.80
-    // parallax: far clouds scroll slower
-    this.parallax = 0.2 + depth * 0.3;     // 0.2 .. 0.5
-
-    // slow drift
-    this.speed = 0.05 + depth * 0.15;
-    this.drift = 0;
+    // parallax determine how fast the clouds move when the user moves
+    if (layer === 0) {
+      this.scale = 1.75;
+      this.opacity = 0.3;
+      this.parallax = 0.35;
+      this.speed = 0.05;
+    } else {
+      this.scale = 2.5;
+      this.opacity = 0.75;
+      this.parallax = 0.45;
+      this.speed = 0.15;
+    }
 
     this.width = this.image.width * this.scale;
     this.height = this.image.height * this.scale;
   }
 
-  update() {
-    this.drift -= this.speed;
-  }
-
   /**
    * @param {CanvasRenderingContext2D} ctx
-   * @param {number} cameraX
+   * @param {number} screenX  pre-computed wrapped screen position
    */
-  render(ctx, cameraX) {
-    const screenX = this.x + this.drift - cameraX * this.parallax;
-
+  render(ctx, screenX) {
     ctx.save();
     ctx.globalAlpha = this.opacity;
     ctx.imageSmoothingEnabled = false;
