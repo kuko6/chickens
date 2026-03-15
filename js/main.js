@@ -3,38 +3,8 @@ import { InputManager } from "./engine/input.js";
 import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
 import { GameScene } from "./scenes/game-scene.js";
-
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const viewport = configureCanvasForHiDPI(canvas, ctx);
-
-const assets = await loadAssets();
-
-const input = new InputManager();
-
-const network = new NetworkManager();
-network.connect();
-
-let currentScene = null;
-
-function switchScene(scene) {
-  currentScene?.exit();
-  currentScene = scene;
-  currentScene.enter();
-}
-
-const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene };
-
-switchScene(new GameScene(sceneContext));
-
-// start
-const loop = new GameLoop(
-  (dt) => currentScene.update(dt),
-  () => currentScene.render(),
-);
-
-loop.start();
+import { CloudLayer } from "./scenes/cloud-layer.js";
+import { SeededRandom } from "./engine/seeded-random.js";
 
 /**
  * Keep logical game coordinates stable while rendering at device pixel ratio.
@@ -54,3 +24,39 @@ function configureCanvasForHiDPI(canvas, ctx) {
 
   return { width, height, dpr };
 }
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const viewport = configureCanvasForHiDPI(canvas, ctx);
+
+const assets = await loadAssets();
+
+const input = new InputManager();
+
+const network = new NetworkManager();
+network.connect();
+await network.ready;
+
+const mapSeed = network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
+const rng = new SeededRandom(mapSeed);
+
+const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
+const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene, cloudLayer, rng };
+
+let currentScene = null;
+function switchScene(scene) {
+  currentScene?.exit();
+  currentScene = scene;
+  currentScene.enter();
+}
+
+switchScene(new GameScene(sceneContext));
+
+// start
+const loop = new GameLoop(
+  (dt) => currentScene.update(dt),
+  () => currentScene.render(),
+);
+
+loop.start();

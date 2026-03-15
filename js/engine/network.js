@@ -2,6 +2,8 @@ export class NetworkManager {
   constructor() {
     this.id = null;
     this.ws = null;
+    this.mapSeed = null;
+    this.colorIndex = null;
     this.remotePlayers = new Map(); // id -> state
     this.onId = null;
     this.onJoin = null;
@@ -9,9 +11,12 @@ export class NetworkManager {
     this.onCustomize = null;
   }
 
+  /** @returns {Promise<void>} resolves once the server sends the id message */
   connect() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+    this.ready = new Promise((resolve) => { this._resolveReady = resolve; });
 
     this.ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
@@ -19,6 +24,9 @@ export class NetworkManager {
       switch (data.type) {
         case "id":
           this.id = data.id;
+          this.mapSeed = data.mapSeed;
+          this.colorIndex = data.colorIndex;
+          this._resolveReady?.();
           this.onId?.(data.colorIndex);
           break;
         case "join":

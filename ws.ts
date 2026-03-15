@@ -4,6 +4,7 @@ const clients = new Map<
   { ws: WebSocket; colorIndex: number; spriteSet: string; name: string }
 >();
 let nextId = 1;
+const mapSeed = Math.floor(Math.random() * 0x7fffffff);
 
 /** Returns the first free color index, or -1 if full. */
 function claimColorIndex(): number {
@@ -41,7 +42,7 @@ export function handleWebSocket(req: Request): Response {
     }
 
     clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "" });
-    socket.send(JSON.stringify({ type: "id", id, colorIndex }));
+    socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed }));
     broadcast(
       JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }),
       id,

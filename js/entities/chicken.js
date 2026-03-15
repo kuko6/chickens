@@ -42,6 +42,8 @@ export class Chicken extends BaseChicken {
 
   /** @param {number} dt */
   update(dt) {
+    // TODO: use dt for movement in the actuall game
+
     const jumpHeld = this.input.isDown("jump");
     const inputX = (this.input.isDown("right") ? 1 : 0) - (this.input.isDown("left") ? 1 : 0);
     const inputY = (this.input.isDown("down") ? 1 : 0) - (this.input.isDown("up") ? 1 : 0);
@@ -117,8 +119,6 @@ export class Chicken extends BaseChicken {
       this.y += this.velocityY;
     }
 
-    if (this.x < 0) this.x = 0;
-    if (this.x > this.bounds.width - this.width) this.x = this.bounds.width - this.width;
     if (this.y < this.minY) this.y = this.minY;
     if (this.y > this.maxY) this.y = this.maxY;
 

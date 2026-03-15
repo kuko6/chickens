@@ -88,7 +88,7 @@ export class BaseChicken {
     // draw name above chicken
     if (this.name) {
       ctx.save();
-      ctx.font = "bold 12px Arial";
+      ctx.font = "bold 12px DepartureMono";
       ctx.textAlign = "center";
 
       const nameX = this.x + drawWidth / 2;

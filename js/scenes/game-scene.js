@@ -16,9 +16,12 @@ export class GameScene {
     this.assets = context.assets;
     this.input = context.input;
     this.network = context.network;
+    this.cloudLayer = context.cloudLayer;
+    this.rng = context.rng;
     this.chicken = null;
     this.overlay = null;
     this.networkSync = null;
+    this.cameraX = 0;
   }
 
   enter() {
@@ -28,27 +31,49 @@ export class GameScene {
     });
 
     // random initial appearance
-    const randomSet = SPRITE_SETS[Math.floor(Math.random() * SPRITE_SETS.length)].name;
+    const randomSet =
+      SPRITE_SETS[Math.floor(Math.random() * SPRITE_SETS.length)].name;
     this.chicken.setSpriteSet(randomSet);
 
     // customization overlay
-    this.overlay = new CustomizeOverlay(this.canvas, this.assets, (spriteSet, colorIndex, name) => {
-      this.chicken.setSpriteSet(spriteSet);
-      this.chicken.setColorIndex(colorIndex);
-      this.chicken.name = name;
-      this.network.sendCustomize(spriteSet, colorIndex, name);
-    });
+    this.overlay = new CustomizeOverlay(
+      this.canvas,
+      this.assets,
+      (spriteSet, colorIndex, name) => {
+        this.chicken.setSpriteSet(spriteSet);
+        this.chicken.setColorIndex(colorIndex);
+        this.chicken.name = name;
+        this.network.sendCustomize(spriteSet, colorIndex, name);
+      },
+    );
     this.overlay.selectedSpriteSet = randomSet;
 
     // network sync
     this.networkSync = new NetworkSync(this.network, this.assets);
     this.networkSync.init(this.chicken, this.overlay);
+
+    // ground tile config
+    this.tileSize = 16;
+    this.tileScale = 3;
+    this.drawSize = this.tileSize * this.tileScale;
+    this.groundRows = Math.ceil(
+      (this.canvasH - (this.chicken.minY + 30)) / this.drawSize,
+    );
+
+    // derive tile counts from tileset width
+    const { groundTileset, groundEdgeTileset } = this.assets.environment;
+    this.edgeTileCount = groundEdgeTileset.width / this.tileSize;
+    this.groundTileCount = groundTileset.width / this.tileSize;
   }
 
   /** @param {number} dt */
   update(dt) {
+    this.cloudLayer.update();
     this.chicken.update(dt);
     this.networkSync.update(this.chicken);
+
+    // center camera on chicken
+    this.cameraX = this.chicken.x + this.chicken.width / 2 - this.canvasW / 2;
   }
 
   render() {
@@ -56,25 +81,60 @@ export class GameScene {
 
     ctx.clearRect(0, 0, this.canvasW, this.canvasH);
 
-    // fill ground area below horizon
-    const horizonY = this.chicken.minY + 30;
-    ctx.fillStyle = "#c8e6a0";
-    ctx.fillRect(0, horizonY, this.canvasW, this.canvasH - horizonY);
+    // draw clouds behind ground
+    this.cloudLayer.render(ctx, this.cameraX);
 
-    // draw horizon line
-    ctx.strokeStyle = "#272744";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, horizonY);
-    ctx.lineTo(this.canvasW, horizonY);
-    ctx.stroke();
+    this.renderGround(ctx);
 
-    // draw all chickens sorted by y so lower ones appear in front
+    // draw all chickens sorted by y, offset by camera
     const allChickens = [this.chicken, ...this.networkSync.getRemoteChickens()];
     allChickens.sort((a, b) => a.y - b.y);
     for (const chicken of allChickens) {
+      const origX = chicken.x;
+      chicken.x = origX - this.cameraX;
       chicken.render(ctx);
+      chicken.x = origX;
     }
+  }
+
+  /**
+   * Draw tiled ground (infinite scroll). Each tile is chosen by rng.hash(col, row),
+   * so the same world column always picks the same tile variant regardless of scroll
+   * direction. Only the visible columns are drawn each frame.
+   */
+  renderGround(ctx) {
+    const horizonY = this.chicken.minY + 30;
+    const { tileSize, drawSize, groundRows } = this;
+    const { groundTileset, groundEdgeTileset } = this.assets.environment;
+
+    const startCol = Math.floor(this.cameraX / drawSize);
+    const visibleCols = Math.ceil(this.canvasW / drawSize) + 1;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    for (let row = 0; row < groundRows; row++) {
+      const isEdge = row === 0;
+      const tileset = isEdge ? groundEdgeTileset : groundTileset;
+      const tileCount = isEdge ? this.edgeTileCount : this.groundTileCount;
+      for (let i = 0; i < visibleCols; i++) {
+        const worldCol = startCol + i;
+        const hash = this.rng.hash(worldCol, row);
+        const tileIdx = hash % tileCount;
+        const screenX = worldCol * drawSize - this.cameraX;
+        ctx.drawImage(
+          tileset,
+          tileIdx * tileSize,
+          0,
+          tileSize,
+          tileSize,
+          Math.round(screenX),
+          horizonY + row * drawSize,
+          drawSize,
+          drawSize,
+        );
+      }
+    }
+    ctx.restore();
   }
 
   exit() {

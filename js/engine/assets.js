@@ -67,10 +67,31 @@ export async function loadAssets() {
 
   const spriteSets = Object.fromEntries(setEntries);
 
+  // Load ground tilesets
+  const [groundTileset, groundEdgeTileset] = await Promise.all([
+    loadImage("assets/sprites/tilesets/ground.png"),
+    loadImage("assets/sprites/tilesets/ground_edge.png"),
+  ]);
+
+  // Load cloud images
+  const cloudPaths = [
+    "assets/sprites/clouds/cloud1.png",
+    "assets/sprites/clouds/cloud2.png",
+    "assets/sprites/clouds/cloud3.png",
+    "assets/sprites/clouds/cloud4.png",
+    "assets/sprites/clouds/cloud5.png",
+    "assets/sprites/clouds/cloud6.png",
+    "assets/sprites/clouds/cloud7.png",
+    "assets/sprites/clouds/cloud8.png",
+    "assets/sprites/clouds/cloud9.png",
+  ];
+  const clouds = await Promise.all(cloudPaths.map(loadImage));
+
   return {
     spriteSets,
     // backward compat alias
     sprites: spriteSets["default"],
     sounds: { cluck: spriteSets["default"].cluckSound },
+    environment: { clouds, groundTileset, groundEdgeTileset },
   };
 }

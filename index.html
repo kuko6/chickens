@@ -10,6 +10,12 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="manifest" href="/assets/icons/site.webmanifest">
     <style>
+        @font-face {
+            font-family: 'DepartureMono';
+            src: url('assets/DepartureMono-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
         body {
             margin: 0;
             padding: 20px;
@@ -17,7 +23,7 @@
             flex-direction: column;
             align-items: center;
             background-color: #ffffff;
-            font-family: Arial, sans-serif;
+            font-family: 'DepartureMono', monospace;
         }
         #gameCanvas {
             border: 1px solid #000000;
@@ -29,6 +35,7 @@
             margin-top: 20px;
             font-size: 16px;
             color: #333;
+            font-family: sans-serif;
         }
     </style>
 </head>
@@ -37,7 +44,7 @@
         <canvas id="gameCanvas" width="800" height="400"></canvas>
     </div>
     <div class="controls">
-        <p>Use <strong>Arrow Left</strong> and <strong>Arrow Right</strong> to move the chicken</p>
+        <p>Use <strong>Arrow keys</strong> to move your chicken</p>
         <p>Press <strong>Spacebar</strong> to jump</p>
         <p>Press <strong>V</strong> to cluck</p>
     </div>
