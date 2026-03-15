@@ -4,19 +4,21 @@ export class NetworkManager {
     this.ws = null;
     this.mapSeed = null;
     this.colorIndex = null;
+    this.connected = false;
     this.remotePlayers = new Map(); // id -> state
     this.onId = null;
     this.onJoin = null;
     this.onLeave = null;
     this.onCustomize = null;
+    this.onDisconnect = null;
   }
 
-  /** @returns {Promise<void>} resolves once the server sends the id message */
+  /** @returns {Promise<void>} resolves once the server sends the id message, or on failure */
   connect() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
-    this.ready = new Promise((resolve) => { this._resolveReady = resolve; });
+    this.ready = new Promise((resolve) => { this.resolveReady = resolve; });
 
     this.ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
@@ -26,7 +28,8 @@ export class NetworkManager {
           this.id = data.id;
           this.mapSeed = data.mapSeed;
           this.colorIndex = data.colorIndex;
-          this._resolveReady?.();
+          this.connected = true;
+          this.resolveReady?.();
           this.onId?.(data.colorIndex);
           break;
         case "join":
@@ -43,6 +46,24 @@ export class NetworkManager {
         case "customize":
           this.onCustomize?.(data.id, data.spriteSet, data.colorIndex, data.name);
           break;
+      }
+    };
+
+    this.ws.onerror = () => {
+      // resolve ready so the game doesn't hang
+      this.resolveReady?.();
+      this.resolveReady = null;
+    };
+
+    this.ws.onclose = () => {
+      const wasConnected = this.connected;
+      this.connected = false;
+      // resolve ready in case we never got the id message
+      this.resolveReady?.();
+      this.resolveReady = null;
+      if (wasConnected) {
+        this.remotePlayers.clear();
+        this.onDisconnect?.();
       }
     };
   }

@@ -24,7 +24,7 @@ export class NetworkSync {
       this.network.sendCustomize(chicken.spriteSetName, colorIndex, chicken.name);
     };
 
-    // If the id message arrived before init (e.g. awaiting ready), apply now
+    // if the id message arrived before init (e.g. awaiting ready), apply now
     if (this.network.colorIndex !== null) {
       this.network.onId(this.network.colorIndex);
     }
@@ -46,6 +46,10 @@ export class NetworkSync {
       if (spriteSet !== undefined) remote.setSpriteSet(spriteSet);
       if (colorIndex !== undefined) remote.setColorIndex(colorIndex);
       if (name !== undefined) remote.name = name;
+    };
+
+    this.network.onDisconnect = () => {
+      this.remoteChickens.clear();
     };
   }
 
