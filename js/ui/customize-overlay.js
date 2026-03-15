@@ -57,7 +57,7 @@ export class CustomizeOverlay {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      font-family: Arial, sans-serif;
+      font-family: 'DepartureMono', monospace;
       z-index: 5;
     `;
 
