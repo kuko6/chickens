@@ -66,7 +66,8 @@ export class NetworkManager {
           this.onReady?.(data.id, data.ready);
           break;
         case "start":
-          this.onStart?.();
+          this.roundSeed = data.roundSeed;
+          this.onStart?.(data.roundSeed);
           break;
       }
     };

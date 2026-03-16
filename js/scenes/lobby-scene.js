@@ -95,8 +95,8 @@ export class LobbyScene {
       }
     };
 
-    this.network.onStart = () => {
-      this.startRunner();
+    this.network.onStart = (roundSeed) => {
+      this.startRunner(roundSeed);
     };
 
     // reset ready states when someone joins/leaves
@@ -132,15 +132,16 @@ export class LobbyScene {
           this.network.sendReady();
           this.localReady = !this.localReady;
         } else {
-          // offline single-player: start immediately
-          this.startRunner();
+          // offline single-player: generate a random seed locally
+          const roundSeed = Math.floor(Math.random() * 0x7fffffff);
+          this.startRunner(roundSeed);
         }
       }
     };
     window.addEventListener("keydown", this.onKeyDown);
   }
 
-  startRunner() {
+  startRunner(roundSeed) {
     const runner = new RunnerScene(this.context);
     runner.chickenState = {
       spriteSetName: this.chicken.spriteSetName,
@@ -148,6 +149,7 @@ export class LobbyScene {
       tint: this.chicken.tint,
       name: this.chicken.name,
     };
+    runner.roundSeed = roundSeed;
     this.switchScene(runner);
   }
 

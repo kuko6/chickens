@@ -89,7 +89,8 @@ export function handleWebSocket(req: Request): Response {
         broadcast(JSON.stringify({ type: "ready", id, ready: client.ready }));
         // Check if all players are ready
         if (clients.size > 0 && [...clients.values()].every((c) => c.ready)) {
-          broadcast(JSON.stringify({ type: "start" }));
+          const roundSeed = Math.floor(Math.random() * 0x7fffffff);
+          broadcast(JSON.stringify({ type: "start", roundSeed }));
           // Reset ready state for next round
           for (const c of clients.values()) c.ready = false;
         }

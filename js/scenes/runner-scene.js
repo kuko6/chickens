@@ -7,7 +7,9 @@ import { LobbyScene } from "./lobby-scene.js";
 const BASE_SPEED = 3;
 const ACCEL = 0.002; // speed increase per tick
 const MAX_SPEED = 20;
-const OBSTACLE_SPACING = 350; // min pixels between spawn slots
+const OBSTACLE_SPACING = 260; // pixels between spawn slots
+const OBSTACLE_JITTER = 60;  // random x-offset within each slot
+const MAX_CONSECUTIVE = 3;   // max consecutive obstacles before forced gap
 const DESPAWN_BEHIND = 300; // pixels behind camera to remove
 
 export class RunnerScene {
@@ -32,6 +34,7 @@ export class RunnerScene {
 
     // will be set by lobby before enter()
     this.chickenState = null;
+    this.roundSeed = 0;
   }
 
   enter() {
@@ -49,6 +52,21 @@ export class RunnerScene {
         this.chicken.setColorIndex(this.chickenState.colorIndex);
       }
       this.chicken.name = this.chickenState.name || "";
+    }
+
+    // spread chickens evenly from the center of the y axis
+    const totalPlayers = 1 + this.network.remotePlayers.size;
+    const midY = (this.chicken.minY + this.chicken.maxY) / 2;
+    if (totalPlayers === 1) {
+      this.chicken.y = midY;
+    } else {
+      const ids = [this.network.id, ...this.network.remotePlayers.keys()];
+      ids.sort((a, b) => Number(a) - Number(b));
+      const slot = ids.indexOf(this.network.id);
+      const maxRange = this.chicken.maxY - this.chicken.minY;
+      const gap = Math.min(60, maxRange / (totalPlayers - 1));
+      const totalSpan = (totalPlayers - 1) * gap;
+      this.chicken.y = midY - totalSpan / 2 + slot * gap;
     }
 
     // enable auto-run animation
@@ -166,25 +184,42 @@ export class RunnerScene {
 
     while (this.nextSpawnIndex * OBSTACLE_SPACING < spawnEdge) {
       const idx = this.nextSpawnIndex;
-      const hash = this.rng.hash(idx, 42);
+      const hash = this.rng.hash(idx, 42, this.roundSeed);
 
       // ~40% chance to skip a slot for variety
-      if (hash % 5 > 1) {
-        const spriteIdx = hash % obstacleSprites.length;
-        const tileset = obstacleSprites[spriteIdx];
+      const shouldSpawn = hash % 5 > 1;
 
-        const worldX = idx * OBSTACLE_SPACING;
-
-        // pre-roll middle tile indices (1 or 2) for each middle row
-        const middleRows = Math.max(0, this.groundRows - 2);
-        const middleTiles = [];
-        for (let r = 0; r < middleRows; r++) {
-          middleTiles.push(1 + (this.rng.hash(idx, r) % 2));
+      if (shouldSpawn) {
+        // Playability check: if the last MAX_CONSECUTIVE slots all spawned,
+        // force this slot to be empty so there's always a gap.
+        let forceGap = true;
+        for (let k = 1; k <= MAX_CONSECUTIVE; k++) {
+          const prevHash = this.rng.hash(idx - k, 42, this.roundSeed);
+          if (prevHash % 5 <= 1) { // that slot was skipped
+            forceGap = false;
+            break;
+          }
         }
 
-        this.obstacles.push(
-          new Obstacle(worldX, horizonY, tileset, this.groundRows, this.tileScale, this.tileSize, middleTiles),
-        );
+        if (!forceGap) {
+          const spriteIdx = hash % obstacleSprites.length;
+          const tileset = obstacleSprites[spriteIdx];
+
+          // Add jitter to x position within the slot
+          const jitter = this.rng.hash(idx, 99, this.roundSeed) % OBSTACLE_JITTER;
+          const worldX = idx * OBSTACLE_SPACING + jitter;
+
+          // pre-roll middle tile indices (1 or 2) for each middle row
+          const middleRows = Math.max(0, this.groundRows - 2);
+          const middleTiles = [];
+          for (let r = 0; r < middleRows; r++) {
+            middleTiles.push(1 + (this.rng.hash(idx, r, this.roundSeed) % 2));
+          }
+
+          this.obstacles.push(
+            new Obstacle(worldX, horizonY, tileset, this.groundRows, this.tileScale, this.tileSize, middleTiles),
+          );
+        }
       }
 
       this.nextSpawnIndex++;
