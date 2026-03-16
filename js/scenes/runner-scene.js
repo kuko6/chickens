@@ -140,6 +140,7 @@ export class RunnerScene {
 
     // auto-scroll: move chicken right
     this.chicken.x += this.scrollSpeed;
+    this.chicken.gameSpeed = this.scrollSpeed;
 
     // score
     this.distance = Math.floor(this.chicken.x / 10);

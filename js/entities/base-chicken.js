@@ -17,6 +17,7 @@ export class BaseChicken {
     this.facingRight = true;
     this.isMoving = false;
     this.isJumping = false;
+    this.isGliding = false;
     this.isClucking = false;
 
     this.currentFrame = 0;
@@ -53,7 +54,10 @@ export class BaseChicken {
     const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
     let sprite, frameX;
 
-    if (this.isJumping) {
+    if (this.isGliding) {
+      sprite = set.glide;
+      frameX = this.currentFrame * this.spriteWidth;
+    } else if (this.isJumping) {
       sprite = set.jump;
       frameX = 0;
     } else if (this.isMoving) {

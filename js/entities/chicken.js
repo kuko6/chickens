@@ -26,6 +26,14 @@ export class Chicken extends BaseChicken {
     this.maxJumpHoldFrames = 8;
     this.jumpHoldBoost = -0.4;
 
+    // glide
+    this.glideGravity = 0.15;
+    this.glideMaxFallSpeed = 2;
+    this.baseGlideFrames = 30;
+    this.maxGlideFrames = this.baseGlideFrames;
+    this.glideFrames = 0;
+    this.gameSpeed = 0;
+
     // start centered in the walkable area
     this.x = (this.bounds.width - this.width) / 2;
     this.y = (this.minY + this.maxY) / 2;
@@ -60,7 +68,22 @@ export class Chicken extends BaseChicken {
         this.velocityY += this.jumpHoldBoost;
         this.jumpHoldFrames++;
       }
-      this.velocityY += this.gravity;
+
+      // glide: hold space while falling to slow descent
+      // budget shrinks as game speed increases (3 → 20 maps to 100% → 30% of base)
+      const speedFactor = 1 - 0.7 * Math.min((this.gameSpeed - 3) / 17, 1);
+      this.maxGlideFrames = Math.round(this.baseGlideFrames * speedFactor);
+      if (jumpHeld && this.velocityY > 0 && this.glideFrames < this.maxGlideFrames) {
+        this.isGliding = true;
+        this.glideFrames++;
+        this.velocityY += this.glideGravity;
+        if (this.velocityY > this.glideMaxFallSpeed) {
+          this.velocityY = this.glideMaxFallSpeed;
+        }
+      } else {
+        this.isGliding = false;
+        this.velocityY += this.gravity;
+      }
     } else {
       // free Y movement on the ground
       this.velocityY = inputY * this.speedY;
@@ -121,7 +144,9 @@ export class Chicken extends BaseChicken {
         this.airY = 0;
         this.velocityY = 0;
         this.isJumping = false;
+        this.isGliding = false;
         this.jumpHoldFrames = 0;
+        this.glideFrames = 0;
       }
     } else {
       this.y += this.velocityY;
@@ -130,8 +155,8 @@ export class Chicken extends BaseChicken {
     if (this.y < this.minY) this.y = this.minY;
     if (this.y > this.maxY) this.y = this.maxY;
 
-    // run animation frames
-    if (this.isMoving) {
+    // run / glide animation frames
+    if (this.isGliding || this.isMoving) {
       this.frameTimer++;
       if (this.frameTimer >= this.frameDelay) {
         this.frameTimer = 0;

@@ -26,6 +26,7 @@ export class RemoteChicken extends BaseChicken {
     this.facingRight = state.facingRight;
     this.isMoving = state.isMoving;
     this.isJumping = state.isJumping;
+    this.isGliding = state.isGliding;
 
     // play cluck sound when remote chicken starts clucking
     if (state.isClucking && !this.isClucking) {

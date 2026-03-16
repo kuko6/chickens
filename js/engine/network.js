@@ -104,6 +104,7 @@ export class NetworkManager {
       facingRight: chicken.facingRight,
       isMoving: chicken.isMoving,
       isJumping: chicken.isJumping,
+      isGliding: chicken.isGliding,
       isClucking: chicken.isClucking,
       currentFrame: chicken.currentFrame,
       cluckFrame: chicken.cluckFrame,
