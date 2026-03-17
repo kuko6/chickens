@@ -7,10 +7,11 @@ import { LobbyScene } from "./lobby-scene.js";
 const BASE_SPEED = 3;
 const ACCEL = 0.002; // speed increase per tick
 const MAX_SPEED = 20;
-const OBSTACLE_SPACING = 260; // pixels between spawn slots
-const OBSTACLE_JITTER = 60;  // random x-offset within each slot
-const MAX_CONSECUTIVE = 3;   // max consecutive obstacles before forced gap
-const DESPAWN_BEHIND = 300; // pixels behind camera to remove
+const MIN_GAP = 50;          // closest two obstacles can be (pixels)
+const MAX_GAP = 500;         // largest gap between spawn slots
+const SAFE_FRAMES = 55;      // conservative airborne frames during jump+glide
+const HITBOX_SPAN = 108;     // obstacle width (48) + chicken width (60)
+const DESPAWN_BEHIND = 300;  // pixels behind camera to remove
 
 export class RunnerScene {
   constructor(context) {
@@ -87,7 +88,9 @@ export class RunnerScene {
     this.groundTileCount = groundTileset.width / this.tileSize;
 
     // start spawning well ahead of the chicken so nothing appears on screen immediately
-    this.nextSpawnIndex = Math.ceil((this.chicken.x + this.canvasW) / OBSTACLE_SPACING);
+    this.nextSpawnX = this.chicken.x + this.canvasW;
+    this.nextSpawnIndex = 0;
+    this.consecutiveSpawned = 0;
 
     this.elapsed = 0;
     this.scrollSpeed = BASE_SPEED;
@@ -183,46 +186,61 @@ export class RunnerScene {
     const obstacleSprites = this.assets.environment.obstacles;
     const horizonY = this.horizonY;
 
-    while (this.nextSpawnIndex * OBSTACLE_SPACING < spawnEdge) {
+    while (this.nextSpawnX < spawnEdge) {
       const idx = this.nextSpawnIndex;
       const hash = this.rng.hash(idx, 42, this.roundSeed);
 
-      // ~40% chance to skip a slot for variety
-      const shouldSpawn = hash % 5 > 1;
+      // variable gap to next slot — creates organic spacing
+      const gapHash = this.rng.hash(idx, 77, this.roundSeed);
+      const gap = MIN_GAP + (gapHash % (MAX_GAP - MIN_GAP));
 
-      if (shouldSpawn) {
-        // Playability check: if the last MAX_CONSECUTIVE slots all spawned,
-        // force this slot to be empty so there's always a gap.
-        let forceGap = true;
-        for (let k = 1; k <= MAX_CONSECUTIVE; k++) {
-          const prevHash = this.rng.hash(idx - k, 42, this.roundSeed);
-          if (prevHash % 5 <= 1) { // that slot was skipped
-            forceGap = false;
+      // max consecutive scales with speed: more clusters allowed as game speeds up
+      // speed is derived from world position so it's deterministic across clients
+      const approxSpeed = Math.min(
+        Math.sqrt(BASE_SPEED * BASE_SPEED + 2 * ACCEL * this.nextSpawnX),
+        MAX_SPEED,
+      );
+      const maxConsecutive = Math.max(2, Math.min(6,
+        Math.floor((SAFE_FRAMES * approxSpeed - HITBOX_SPAN) / MIN_GAP),
+      ));
+
+      // ~30% chance to skip a slot for breathing room
+      const shouldSpawn = hash % 10 < 7;
+
+      if (shouldSpawn && this.consecutiveSpawned < maxConsecutive) {
+        const spriteIdx = hash % obstacleSprites.length;
+        const tileset = obstacleSprites[spriteIdx];
+        const worldX = this.nextSpawnX;
+
+        // pick a random middle tile (1 or 2) for a given row index
+        const midTile = (r) => 1 + (this.rng.hash(idx, r, this.roundSeed) % 2);
+
+        // variant selection: 0=full, 1=tall-top, 2=tall-bottom, 3=hole
+        const variantHash = this.rng.hash(idx, 55, this.roundSeed);
+        const variant = variantHash % 3;
+        let segments;
+
+        switch (variant) {
+          case 1: // tall (3 rows from top)
+            segments = [{ startRow: 0, tiles: [0, midTile(0), 3] }];
             break;
-          }
+          case 2: // tall (3 rows from row 1)
+            segments = [{ startRow: 1, tiles: [0, midTile(0), 3] }];
+            break;
+          default: // full (4 rows)
+            segments = [{ startRow: 0, tiles: [0, midTile(0), midTile(1), 3] }];
+            break;
         }
 
-        if (!forceGap) {
-          const spriteIdx = hash % obstacleSprites.length;
-          const tileset = obstacleSprites[spriteIdx];
-
-          // Add jitter to x position within the slot
-          const jitter = this.rng.hash(idx, 99, this.roundSeed) % OBSTACLE_JITTER;
-          const worldX = idx * OBSTACLE_SPACING + jitter;
-
-          // pre-roll middle tile indices (1 or 2) for each middle row
-          const middleRows = Math.max(0, this.groundRows - 2);
-          const middleTiles = [];
-          for (let r = 0; r < middleRows; r++) {
-            middleTiles.push(1 + (this.rng.hash(idx, r, this.roundSeed) % 2));
-          }
-
-          this.obstacles.push(
-            new Obstacle(worldX, horizonY, tileset, this.groundRows, this.tileScale, this.tileSize, middleTiles),
-          );
-        }
+        this.obstacles.push(
+          new Obstacle(worldX, horizonY, tileset, this.tileScale, this.tileSize, segments),
+        );
+        this.consecutiveSpawned++;
+      } else {
+        this.consecutiveSpawned = 0;
       }
 
+      this.nextSpawnX += gap;
       this.nextSpawnIndex++;
     }
   }
