@@ -187,29 +187,21 @@ export class LobbyScene {
       chicken.x = origX;
     }
 
-    // draw ready prompt
+    // draw ready hint at the bottom
     ctx.save();
-    ctx.font = "bold 16px DepartureMono";
-    ctx.textAlign = "center";
-    const textX = this.canvasW / 2;
-    const textY = 40;
-
     const remoteCount = this.networkSync.getRemoteChickens().length;
     const totalPlayers = 1 + remoteCount;
     const readyCount = this.readyPlayers.size + (this.localReady ? 1 : 0);
 
-    let text;
-    if (this.localReady) {
-      text = `Ready! (${readyCount}/${totalPlayers})`;
-    } else {
-      text = "Press Enter to ready up";
-    }
-
-    const tw = ctx.measureText(text).width;
-    ctx.fillStyle = this.localReady ? "rgba(40, 160, 40, 0.6)" : "rgba(0, 0, 0, 0.5)";
-    ctx.fillRect(textX - tw / 2 - 8, textY - 18, tw + 16, 24);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(text, textX, textY);
+    const hintText = this.localReady
+      ? `ready ${readyCount}/${totalPlayers}`
+      : "press ENTER to ready up";
+    ctx.font = "10px DepartureMono";
+    ctx.textAlign = "center";
+    ctx.fillStyle = this.localReady
+      ? "rgba(80, 200, 80, 1)"
+      : "#595e66";
+    ctx.fillText(hintText, this.canvasW / 2, 16);
     ctx.restore();
   }
 

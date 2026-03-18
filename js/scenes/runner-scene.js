@@ -286,7 +286,7 @@ export class RunnerScene {
     if (this.gameOver) {
       const alive = this.getAliveRemotes();
       ctx.save();
-      ctx.font = "bold 16px DepartureMono";
+      ctx.font = "bold 14px DepartureMono";
       ctx.textAlign = "center";
       const label = alive.length > 0
         ? `Game Over — ${this.distance} — Spectating...`
@@ -298,9 +298,9 @@ export class RunnerScene {
       ctx.fillStyle = "#ffffff";
       ctx.fillText(label, this.canvasW / 2, 30);
 
-      ctx.font = "12px DepartureMono";
+      ctx.font = "10px DepartureMono";
       ctx.fillStyle = "#595e66";
-      ctx.fillText("Press Enter to return to the lobby", this.canvasW / 2, 52);
+      ctx.fillText("press Enter to return to the lobby", this.canvasW / 2, 52);
       ctx.restore();
     }
   }
