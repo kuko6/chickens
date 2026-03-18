@@ -70,10 +70,11 @@ export async function loadAssets() {
   const spriteSets = Object.fromEntries(setEntries);
 
   // Load ground tilesets and obstacle sprites
-  const [groundTileset, groundEdgeTileset, fenceSlim, fenceWide] = await Promise.all([
+  // const [groundTileset, groundEdgeTileset, fenceSlim, fenceWide] = await Promise.all([
+  const [groundTileset, groundEdgeTileset, fenceWide] = await Promise.all([
     loadImage("assets/sprites/tilesets/ground.png"),
     loadImage("assets/sprites/tilesets/ground_edge.png"),
-    loadImage("assets/sprites/tilesets/fence_slim2.png"),
+    // loadImage("assets/sprites/tilesets/fence_slim.png"),
     loadImage("assets/sprites/tilesets/fence_wide.png"),
   ]);
 
@@ -96,6 +97,7 @@ export async function loadAssets() {
     // backward compat alias
     sprites: spriteSets["default"],
     sounds: { cluck: spriteSets["default"].cluckSound },
-    environment: { clouds, groundTileset, groundEdgeTileset, obstacles: [fenceSlim, fenceWide] },
+    // environment: { clouds, groundTileset, groundEdgeTileset, obstacles: [fenceSlim, fenceWide] },
+    environment: { clouds, groundTileset, groundEdgeTileset, obstacles: [fenceWide] },
   };
 }
