@@ -31,10 +31,8 @@ export class GameScene {
       height: this.canvasH,
     });
 
-    // random initial appearance
-    const randomSet =
-      SPRITE_SETS[Math.floor(Math.random() * SPRITE_SETS.length)].name;
-    this.chicken.setSpriteSet(randomSet);
+    // default to imro sprite
+    this.chicken.setSpriteSet("imro");
 
     // customization overlay
     this.overlay = new CustomizeOverlay(
@@ -47,7 +45,7 @@ export class GameScene {
         this.network.sendCustomize(spriteSet, colorIndex, name);
       },
     );
-    this.overlay.selectedSpriteSet = randomSet;
+    this.overlay.selectedSpriteSet = "imro";
 
     // network sync
     this.networkSync = new NetworkSync(this.network, this.assets);
