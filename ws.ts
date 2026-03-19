@@ -1,7 +1,7 @@
 const MAX_PLAYERS = 6;
 const clients = new Map<
   string,
-  { ws: WebSocket; colorIndex: number; spriteSet: string; name: string }
+  { ws: WebSocket; colorIndex: number; spriteSet: string; name: string; ready: boolean }
 >();
 let nextId = 1;
 const mapSeed = Math.floor(Math.random() * 0x7fffffff);
@@ -41,7 +41,7 @@ export function handleWebSocket(req: Request): Response {
       return;
     }
 
-    clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "" });
+    clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "", ready: false });
     socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed }));
     broadcast(
       JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }),
@@ -80,11 +80,31 @@ export function handleWebSocket(req: Request): Response {
       }
     }
 
+    // Handle ready toggle
+    if (data.type === "ready") {
+      const client = clients.get(id);
+      if (client) {
+        client.ready = !client.ready;
+        // Broadcast this player's ready state to everyone (including sender)
+        broadcast(JSON.stringify({ type: "ready", id, ready: client.ready }));
+        // Check if all players are ready
+        if (clients.size > 0 && [...clients.values()].every((c) => c.ready)) {
+          const roundSeed = Math.floor(Math.random() * 0x7fffffff);
+          broadcast(JSON.stringify({ type: "start", roundSeed }));
+          // Reset ready state for next round
+          for (const c of clients.values()) c.ready = false;
+        }
+      }
+      return;
+    }
+
     broadcast(JSON.stringify(data), id);
   };
 
   socket.onclose = () => {
     clients.delete(id);
+    // Reset all ready states when someone leaves
+    for (const c of clients.values()) c.ready = false;
     broadcast(JSON.stringify({ type: "leave", id }));
     console.log(`Player ${id} disconnected (${clients.size}/${MAX_PLAYERS})`);
   };

@@ -18,6 +18,7 @@ export class GameScene {
     this.network = context.network;
     this.cloudLayer = context.cloudLayer;
     this.rng = context.rng;
+    this.horizonY = context.horizonY;
     this.chicken = null;
     this.overlay = null;
     this.networkSync = null;
@@ -56,9 +57,7 @@ export class GameScene {
     this.tileSize = 16;
     this.tileScale = 3;
     this.drawSize = this.tileSize * this.tileScale;
-    this.groundRows = Math.ceil(
-      (this.canvasH - (this.chicken.minY + 30)) / this.drawSize,
-    );
+    this.groundRows = (this.canvasH - this.horizonY) / this.drawSize;
 
     // derive tile counts from tileset width
     const { groundTileset, groundEdgeTileset } = this.assets.environment;
@@ -103,7 +102,7 @@ export class GameScene {
    * direction. Only the visible columns are drawn each frame.
    */
   renderGround(ctx) {
-    const horizonY = this.chicken.minY + 30;
+    const horizonY = this.horizonY;
     const { tileSize, drawSize, groundRows } = this;
     const { groundTileset, groundEdgeTileset } = this.assets.environment;
 

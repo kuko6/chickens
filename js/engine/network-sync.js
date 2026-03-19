@@ -15,17 +15,18 @@ export class NetworkSync {
   /**
    * Wire up network callbacks.
    * @param {import('../entities/chicken.js').Chicken} chicken
-   * @param {import('../ui/customize-overlay.js').CustomizeOverlay} overlay
+   * @param {Object} [overlay]
    */
   init(chicken, overlay) {
     this.network.onId = (colorIndex) => {
       chicken.setColorIndex(colorIndex);
-      overlay.selectedColorIndex = colorIndex;
+      if (overlay) overlay.selectedColorIndex = colorIndex;
       this.network.sendCustomize(chicken.spriteSetName, colorIndex, chicken.name);
     };
 
     // if the id message arrived before init (e.g. awaiting ready), apply now
-    if (this.network.colorIndex !== null) {
+    // skip if chicken already has a colorIndex (re-entry or scene transition)
+    if (this.network.colorIndex !== null && chicken.colorIndex == null) {
       this.network.onId(this.network.colorIndex);
     }
 
@@ -51,6 +52,16 @@ export class NetworkSync {
     this.network.onDisconnect = () => {
       this.remoteChickens.clear();
     };
+
+    // Re-create remote chickens for players that already exist (e.g. after scene transition)
+    for (const [id, info] of this.network.remotePlayerInfo) {
+      if (!this.remoteChickens.has(id)) {
+        const remote = new RemoteChicken(this.assets, info.colorIndex, info.spriteSet, info.name);
+        remote.minY = chicken.minY;
+        remote.maxY = chicken.maxY;
+        this.remoteChickens.set(id, remote);
+      }
+    }
   }
 
   /**
@@ -59,7 +70,11 @@ export class NetworkSync {
    */
   update(chicken) {
     this.network.sendState(chicken);
+    this.receive();
+  }
 
+  /** Apply remote states without sending (used when spectating). */
+  receive() {
     for (const [id, remote] of this.remoteChickens) {
       const state = this.network.remotePlayers.get(id);
       if (state) remote.applyState(state);

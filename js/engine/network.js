@@ -6,11 +6,14 @@ export class NetworkManager {
     this.colorIndex = null;
     this.connected = false;
     this.remotePlayers = new Map(); // id -> state
+    this.remotePlayerInfo = new Map(); // id -> { colorIndex, spriteSet, name }
     this.onId = null;
     this.onJoin = null;
     this.onLeave = null;
     this.onCustomize = null;
     this.onDisconnect = null;
+    this.onReady = null;
+    this.onStart = null;
   }
 
   /** @returns {Promise<void>} resolves once the server sends the id message, or on failure */
@@ -34,17 +37,37 @@ export class NetworkManager {
           break;
         case "join":
           this.remotePlayers.set(data.id, null);
+          this.remotePlayerInfo.set(data.id, {
+            colorIndex: data.colorIndex,
+            spriteSet: data.spriteSet,
+            name: data.name,
+          });
           this.onJoin?.(data.id, data.colorIndex, data.spriteSet, data.name);
           break;
         case "leave":
           this.remotePlayers.delete(data.id);
+          this.remotePlayerInfo.delete(data.id);
           this.onLeave?.(data.id);
           break;
         case "state":
           this.remotePlayers.set(data.id, data);
           break;
-        case "customize":
+        case "customize": {
           this.onCustomize?.(data.id, data.spriteSet, data.colorIndex, data.name);
+          const info = this.remotePlayerInfo.get(data.id);
+          if (info) {
+            if (data.spriteSet !== undefined) info.spriteSet = data.spriteSet;
+            if (data.colorIndex !== undefined) info.colorIndex = data.colorIndex;
+            if (data.name !== undefined) info.name = data.name;
+          }
+          break;
+        }
+        case "ready":
+          this.onReady?.(data.id, data.ready);
+          break;
+        case "start":
+          this.roundSeed = data.roundSeed;
+          this.onStart?.(data.roundSeed);
           break;
       }
     };
@@ -63,6 +86,7 @@ export class NetworkManager {
       this.resolveReady = null;
       if (wasConnected) {
         this.remotePlayers.clear();
+        this.remotePlayerInfo.clear();
         this.onDisconnect?.();
       }
     };
@@ -80,11 +104,24 @@ export class NetworkManager {
       facingRight: chicken.facingRight,
       isMoving: chicken.isMoving,
       isJumping: chicken.isJumping,
+      isGliding: chicken.isGliding,
       isClucking: chicken.isClucking,
       currentFrame: chicken.currentFrame,
       cluckFrame: chicken.cluckFrame,
       spriteSet: chicken.spriteSetName,
     }));
+  }
+
+  /** Notify other clients this player is dead */
+  sendDead() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ type: "state", dead: true }));
+  }
+
+  /** Send ready toggle to server */
+  sendReady() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ type: "ready" }));
   }
 
   /** Send customization change to server */
