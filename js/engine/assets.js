@@ -75,18 +75,16 @@ export async function loadAssets() {
     loadImage("assets/sprites/tilesets/fence_wide.png"),
   ]);
 
-  const cloudPaths = [
-    "assets/sprites/clouds/cloud1.png",
-    "assets/sprites/clouds/cloud2.png",
-    "assets/sprites/clouds/cloud3.png",
-    "assets/sprites/clouds/cloud4.png",
-    "assets/sprites/clouds/cloud5.png",
-    "assets/sprites/clouds/cloud6.png",
-    "assets/sprites/clouds/cloud7.png",
-    "assets/sprites/clouds/cloud8.png",
-    "assets/sprites/clouds/cloud9.png",
-  ];
-  const clouds = await Promise.all(cloudPaths.map(loadImage));
+  const cloudSheet = await loadImage("assets/sprites/clouds/clouds.png");
+  const cloudH = 16, cloudW = 48;
+  const cloudCount = cloudSheet.height / cloudH;
+  const clouds = [];
+  for (let i = 0; i < cloudCount; i++) {
+    const c = document.createElement("canvas");
+    c.width = cloudW; c.height = cloudH;
+    c.getContext("2d").drawImage(cloudSheet, 0, i * cloudH, cloudW, cloudH, 0, 0, cloudW, cloudH);
+    clouds.push(c);
+  }
 
   return {
     spriteSets,
