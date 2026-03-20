@@ -240,11 +240,11 @@ export class CustomizeOverlay {
     if (!ctx) return;
 
     const setData = this.assets.spriteSets[set.name];
-    if (!setData?.idle) return;
+    if (!setData?.spriteSheet) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(setData.idle, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(setData.spriteSheet, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
   }
 
   emitChange() {

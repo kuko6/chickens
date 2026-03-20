@@ -16,12 +16,12 @@ export const TINT_COLORS = [
 const tintCanvas = document.createElement("canvas");
 const tintCtx = tintCanvas.getContext("2d");
 
-export function drawTintedSprite(ctx, sprite, frameX, spriteWidth, spriteHeight, x, y, drawWidth, drawHeight, facingRight, tint, alpha = 1.0) {
+export function drawTintedSprite(ctx, sprite, frameX, frameY, spriteWidth, spriteHeight, x, y, drawWidth, drawHeight, facingRight, tint, alpha = 1.0) {
   tintCanvas.width = drawWidth;
   tintCanvas.height = drawHeight;
   tintCtx.clearRect(0, 0, drawWidth, drawHeight);
   tintCtx.imageSmoothingEnabled = false;
-  tintCtx.drawImage(sprite, frameX, 0, spriteWidth, spriteHeight, 0, 0, drawWidth, drawHeight);
+  tintCtx.drawImage(sprite, frameX, frameY, spriteWidth, spriteHeight, 0, 0, drawWidth, drawHeight);
 
   if (tint) {
     tintCtx.globalCompositeOperation = "source-atop";
