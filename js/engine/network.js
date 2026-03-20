@@ -33,8 +33,7 @@ export class NetworkManager {
           this.colorIndex = data.colorIndex;
           this.connected = true;
           this.resolveReady?.();
-          this.spriteSet = data.spriteSet || "default";
-          this.onId?.(data.colorIndex, this.spriteSet);
+          this.onId?.(data.colorIndex);
           break;
         case "join":
           this.remotePlayers.set(data.id, null);

@@ -8,7 +8,7 @@ export class BaseChicken {
     this.y = 320;
     this.airY = 0;
 
-    this.spriteSetName = "imro";
+    this.spriteSetName = "default";
     this.spriteWidth = 20;
     this.spriteHeight = 20;
     this.width = this.spriteWidth * 3;

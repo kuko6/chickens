@@ -18,12 +18,8 @@ export class NetworkSync {
    * @param {Object} [overlay]
    */
   init(chicken, overlay) {
-    this.network.onId = (colorIndex, spriteSet) => {
+    this.network.onId = (colorIndex) => {
       chicken.setColorIndex(colorIndex);
-      if (spriteSet) {
-        chicken.setSpriteSet(spriteSet);
-        if (overlay) overlay.selectedSpriteSet = spriteSet;
-      }
       if (overlay) overlay.selectedColorIndex = colorIndex;
       this.network.sendCustomize(chicken.spriteSetName, colorIndex, chicken.name);
     };
@@ -31,7 +27,7 @@ export class NetworkSync {
     // if the id message arrived before init (e.g. awaiting ready), apply now
     // skip if chicken already has a colorIndex (re-entry or scene transition)
     if (this.network.colorIndex !== null && chicken.colorIndex == null) {
-      this.network.onId(this.network.colorIndex, this.network.spriteSet);
+      this.network.onId(this.network.colorIndex);
     }
 
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {

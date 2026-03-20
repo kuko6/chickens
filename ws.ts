@@ -41,11 +41,10 @@ export function handleWebSocket(req: Request): Response {
       return;
     }
 
-    const spriteSet = colorIndex === 0 ? "imro" : "default";
-    clients.set(id, { ws: socket, colorIndex, spriteSet, name: "", ready: false });
-    socket.send(JSON.stringify({ type: "id", id, colorIndex, spriteSet, mapSeed }));
+    clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "", ready: false });
+    socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed }));
     broadcast(
-      JSON.stringify({ type: "join", id, colorIndex, spriteSet, name: "" }),
+      JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }),
       id,
     );
     // Tell the new client about existing players
