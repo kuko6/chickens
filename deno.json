@@ -3,6 +3,8 @@
     "@std/http": "jsr:@std/http"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-read serve.ts"
+    "start": "deno run --allow-net --allow-read serve.ts",
+    "build": "deno bundle --outdir dist index.html --minify && cp -r assets favicon.ico dist/",
+    "start:prod": "deno run --allow-net --allow-read serve.ts -- --prod"
   }
 }
