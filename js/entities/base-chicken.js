@@ -49,6 +49,13 @@ export class BaseChicken {
     this.tint = TINT_COLORS[colorIndex % TINT_COLORS.length];
   }
 
+  /** @param {{spriteSetName: string, colorIndex: number, name: string}} appearance */
+  applyAppearance(appearance) {
+    this.setSpriteSet(appearance.spriteSetName);
+    this.setColorIndex(appearance.colorIndex);
+    this.name = appearance.name;
+  }
+
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
     const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
