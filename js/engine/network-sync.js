@@ -10,34 +10,11 @@ export class NetworkSync {
     this.assets = assets;
     /** @type {Map<string, RemoteChicken>} */
     this.remoteChickens = new Map();
-  }
-
-  /**
-   * Wire up network callbacks.
-   * @param {import('../entities/chicken.js').Chicken} chicken
-   * @param {{spriteSetName: string, colorIndex: number, name: string}} [appearance]
-   */
-  init(chicken, appearance) {
-    this.network.onId = (colorIndex) => {
-      if (appearance) {
-        appearance.colorIndex = colorIndex;
-        chicken.applyAppearance(appearance);
-        this.network.sendCustomize(appearance.spriteSetName, colorIndex, appearance.name);
-      } else {
-        chicken.setColorIndex(colorIndex);
-      }
-    };
-
-    // if the id message arrived before init, apply the server-assigned color once
-    if (this.network.colorIndex !== null) {
-      this.network.onId(this.network.colorIndex);
-      this.network.colorIndex = null;
-    }
 
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {
       const remote = new RemoteChicken(this.assets, colorIndex, spriteSet, name);
-      remote.minY = chicken.minY;
-      remote.maxY = chicken.maxY;
+      remote.minY = this.chickenMinY;
+      remote.maxY = this.chickenMaxY;
       this.remoteChickens.set(id, remote);
     };
 
@@ -56,8 +33,41 @@ export class NetworkSync {
     this.network.onDisconnect = () => {
       this.remoteChickens.clear();
     };
+  }
 
-    // Re-create remote chickens for players that already exist (e.g. after scene transition)
+  /**
+   * Attach a new local chicken (e.g. on scene transition).
+   * @param {import('../entities/chicken.js').Chicken} chicken
+   * @param {{spriteSetName: string, colorIndex: number, name: string}} [appearance]
+   */
+  attach(chicken, appearance) {
+    this.chickenMinY = chicken.minY;
+    this.chickenMaxY = chicken.maxY;
+
+    this.network.onId = (colorIndex) => {
+      if (appearance) {
+        appearance.colorIndex = colorIndex;
+        chicken.applyAppearance(appearance);
+        this.network.sendCustomize(appearance.spriteSetName, colorIndex, appearance.name);
+      } else {
+        chicken.setColorIndex(colorIndex);
+      }
+    };
+
+    // if the id message arrived before attach, apply the server-assigned color once
+    if (this.network.colorIndex !== null) {
+      this.network.onId(this.network.colorIndex);
+      this.network.colorIndex = null;
+    }
+
+    // reset state on existing remote chickens for the new scene
+    for (const remote of this.remoteChickens.values()) {
+      remote.minY = chicken.minY;
+      remote.maxY = chicken.maxY;
+      remote.dead = false;
+    }
+
+    // create remote chickens for players that already exist
     for (const [id, info] of this.network.remotePlayerInfo) {
       if (!this.remoteChickens.has(id)) {
         const remote = new RemoteChicken(this.assets, info.colorIndex, info.spriteSet, info.name);
@@ -73,6 +83,8 @@ export class NetworkSync {
    * @param {import('../entities/chicken.js').Chicken} chicken
    */
   update(chicken) {
+    // TODO: can be optimized better as now it sends 
+    // 60 updates even when nothing changes
     this.network.sendState(chicken);
     this.receive();
   }
@@ -88,9 +100,5 @@ export class NetworkSync {
   /** @returns {RemoteChicken[]} */
   getRemoteChickens() {
     return [...this.remoteChickens.values()];
-  }
-
-  destroy() {
-    this.remoteChickens.clear();
   }
 }

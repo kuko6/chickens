@@ -1,41 +1,25 @@
 import { Chicken } from "../entities/chicken.js";
 import { Obstacle } from "../entities/obstacle.js";
 import { InputFilter } from "../engine/input-filter.js";
-import { NetworkSync } from "../engine/network-sync.js";
 import { LobbyScene } from "./lobby-scene.js";
+import { BaseScene } from "./base-scene.js";
 
 const BASE_SPEED = 3;
-const ACCEL = 0.002; // speed increase per tick
+const ACCEL = 0.002;
 const MAX_SPEED = 20;
-const MIN_GAP = 50;          // closest two obstacles can be (pixels)
-const MAX_GAP = 500;         // largest gap between spawn slots
-const SAFE_FRAMES = 55;      // conservative airborne frames during jump+glide
-const HITBOX_SPAN = 108;     // obstacle width (48) + chicken width (60)
-const DESPAWN_BEHIND = 300;  // pixels behind camera to remove
+const MIN_GAP = 50;
+const MAX_GAP = 500;
+const SAFE_FRAMES = 55;
+const HITBOX_SPAN = 108;
+const DESPAWN_BEHIND = 300;
 
-export class RunnerScene {
+export class RunnerScene extends BaseScene {
   constructor(context) {
-    this.ctx = context.ctx;
-    this.canvas = context.canvas;
-    this.viewport = context.viewport;
-    this.canvasW = this.viewport.width;
-    this.canvasH = this.viewport.height;
-    this.assets = context.assets;
-    this.input = context.input;
-    this.network = context.network;
-    this.switchScene = context.switchScene;
-    this.cloudLayer = context.cloudLayer;
-    this.rng = context.rng;
-    this.horizonY = context.horizonY;
-    this.context = context;
-
-    this.chicken = null;
-    this.networkSync = null;
-    this.cameraX = 0;
-
+    super(context);
     this.roundSeed = 0;
   }
 
+  /** Set up runner: filtered input, chicken positioning, obstacles, and scoring. */
   enter() {
     // create chicken with filtered input (only vertical + jump + cluck)
     const filteredInput = new InputFilter(this.input, ["up", "down", "jump", "cluck"]);
@@ -65,21 +49,12 @@ export class RunnerScene {
     // enable auto-run animation
     this.chicken.autoRun = true;
 
-    // network sync
-    this.networkSync = new NetworkSync(this.network, this.assets);
-    this.networkSync.init(this.chicken, this.context.appearance);
+    // attach local chicken to network sync
+    this.networkSync.attach(this.chicken, this.context.appearance);
 
-    // ground tile config
-    this.tileSize = 16;
-    this.tileScale = 3;
-    this.drawSize = this.tileSize * this.tileScale;
-    this.groundRows = (this.canvasH - this.horizonY) / this.drawSize;
+    this.initGround();
 
-    const { groundTileset, groundEdgeTileset } = this.assets.environment;
-    this.edgeTileCount = groundEdgeTileset.width / this.tileSize;
-    this.groundTileCount = groundTileset.width / this.tileSize;
-
-    // start spawning well ahead of the chicken so nothing appears on screen immediately
+    // start spawning well ahead of the chicken
     this.nextSpawnX = this.chicken.x + this.canvasW;
     this.nextSpawnIndex = 0;
     this.consecutiveSpawned = 0;
@@ -102,18 +77,19 @@ export class RunnerScene {
     this.switchScene(new LobbyScene(this.context));
   }
 
-  /** @param {number} dt */
+  /** 
+   * Update clouds, chickens and sync them across network. Check for collisions.
+   * @param {number} dt 
+  */
   update(dt) {
     this.cloudLayer.update();
 
     if (this.gameOver) {
-      // spectate: keep receiving remote state, follow an alive player
       this.networkSync.receive();
       const alive = this.getAliveRemotes();
       if (alive.length > 0) {
         const target = alive[0];
         this.cameraX = target.x + target.width / 2 - this.canvasW / 2;
-        // keep spawning/despawning around spectated player
         this.spawnObstacles();
         this.obstacles = this.obstacles.filter(
           (o) => o.x + o.width > this.cameraX - DESPAWN_BEHIND,
@@ -124,7 +100,6 @@ export class RunnerScene {
 
     this.elapsed++;
     this.scrollSpeed = Math.min(BASE_SPEED + this.elapsed * ACCEL, MAX_SPEED);
-    // console.log(this.scrollSpeed)
 
     // auto-scroll: move chicken right
     this.chicken.x += this.scrollSpeed;
@@ -162,10 +137,16 @@ export class RunnerScene {
     }
   }
 
+  /** @returns {import('../entities/remote-chicken.js').RemoteChicken[]} */
   getAliveRemotes() {
     return this.networkSync.getRemoteChickens().filter((r) => !r.dead);
   }
 
+  /**
+   * Procedurally generate obstacles ahead of camera using seeded RNG.
+   * Gap size, variant, and spawn chance are all deterministic from roundSeed
+   * so all clients produce the same obstacle layout.
+   */
   spawnObstacles() {
     const spawnEdge = this.cameraX + this.canvasW + 200;
     const obstacleSprites = this.assets.environment.obstacles;
@@ -175,12 +156,9 @@ export class RunnerScene {
       const idx = this.nextSpawnIndex;
       const hash = this.rng.hash(idx, 42, this.roundSeed);
 
-      // variable gap to next slot — creates organic spacing
       const gapHash = this.rng.hash(idx, 77, this.roundSeed);
       const gap = MIN_GAP + (gapHash % (MAX_GAP - MIN_GAP));
 
-      // max consecutive scales with speed: more clusters allowed as game speeds up
-      // speed is derived from world position so it's deterministic across clients
       const approxSpeed = Math.min(
         Math.sqrt(BASE_SPEED * BASE_SPEED + 2 * ACCEL * this.nextSpawnX),
         MAX_SPEED,
@@ -189,7 +167,6 @@ export class RunnerScene {
         Math.floor((SAFE_FRAMES * approxSpeed - HITBOX_SPAN) / MIN_GAP),
       ));
 
-      // ~30% chance to skip a slot for breathing room
       const shouldSpawn = hash % 10 < 7;
 
       if (shouldSpawn && this.consecutiveSpawned < maxConsecutive) {
@@ -197,22 +174,20 @@ export class RunnerScene {
         const tileset = obstacleSprites[spriteIdx];
         const worldX = this.nextSpawnX;
 
-        // pick a random middle tile (1 or 2) for a given row index
         const midTile = (r) => 1 + (this.rng.hash(idx, r, this.roundSeed) % 2);
 
-        // variant selection: 0=full, 1=tall-top, 2=tall-bottom, 3=hole
         const variantHash = this.rng.hash(idx, 55, this.roundSeed);
         const variant = variantHash % 3;
         let segments;
 
         switch (variant) {
-          case 1: // tall (3 rows from top)
+          case 1:
             segments = [{ startRow: 0, tiles: [0, midTile(0), 3] }];
             break;
-          case 2: // tall (3 rows from row 1)
+          case 2:
             segments = [{ startRow: 1, tiles: [0, midTile(0), 3] }];
             break;
-          default: // full (4 rows)
+          default:
             segments = [{ startRow: 0, tiles: [0, midTile(0), midTile(1), 3] }];
             break;
         }
@@ -231,31 +206,20 @@ export class RunnerScene {
   }
 
   render() {
-    const ctx = this.ctx;
-
-    ctx.clearRect(0, 0, this.canvasW, this.canvasH);
-
-    this.cloudLayer.render(ctx, this.cameraX);
-
-    this.renderGround(ctx);
+    this.renderBackground();
 
     // render obstacles
     for (const obstacle of this.obstacles) {
-      obstacle.render(ctx, this.cameraX);
+      obstacle.render(this.ctx, this.cameraX);
     }
 
     // draw alive chickens sorted by y, offset by camera
     const alive = this.getAliveRemotes();
     const allChickens = this.gameOver ? alive : [this.chicken, ...alive];
-    allChickens.sort((a, b) => a.y - b.y);
-    for (const chicken of allChickens) {
-      const origX = chicken.x;
-      chicken.x = origX - this.cameraX;
-      chicken.render(ctx);
-      chicken.x = origX;
-    }
+    this.renderChickens(allChickens);
 
     // HUD: distance
+    const ctx = this.ctx;
     ctx.save();
     ctx.font = "bold 16px DepartureMono";
     ctx.textAlign = "right";
@@ -267,7 +231,7 @@ export class RunnerScene {
     ctx.fillText(scoreText, this.canvasW - 16, 30);
     ctx.restore();
 
-    // game over — show as a banner so spectating is still visible
+    // game over banner
     if (this.gameOver) {
       const alive = this.getAliveRemotes();
       ctx.save();
@@ -287,53 +251,6 @@ export class RunnerScene {
       ctx.fillStyle = "#595e66";
       ctx.fillText("press Enter to return to the lobby", this.canvasW / 2, 52);
       ctx.restore();
-    }
-  }
-
-  renderGround(ctx) {
-    const horizonY = this.horizonY;
-    const { tileSize, drawSize, groundRows } = this;
-    const { groundTileset, groundEdgeTileset } = this.assets.environment;
-
-    const startCol = Math.floor(this.cameraX / drawSize);
-    const visibleCols = Math.ceil(this.canvasW / drawSize) + 1;
-
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    for (let row = 0; row < groundRows; row++) {
-      const isEdge = row === 0;
-      const tileset = isEdge ? groundEdgeTileset : groundTileset;
-      const tileCount = isEdge ? this.edgeTileCount : this.groundTileCount;
-      for (let i = 0; i < visibleCols; i++) {
-        const worldCol = startCol + i;
-        const hash = this.rng.hash(worldCol, row);
-        const tileIdx = hash % tileCount;
-        const screenX = worldCol * drawSize - this.cameraX;
-        ctx.drawImage(
-          tileset,
-          tileIdx * tileSize,
-          0,
-          tileSize,
-          tileSize,
-          Math.round(screenX),
-          horizonY + row * drawSize,
-          drawSize,
-          drawSize,
-        );
-      }
-    }
-    ctx.restore();
-  }
-
-  exit() {
-    if (this.onKeyDown) {
-      window.removeEventListener("keydown", this.onKeyDown);
-      this.onKeyDown = null;
-    }
-    this.chicken = null;
-    if (this.networkSync) {
-      this.networkSync.destroy();
-      this.networkSync = null;
     }
   }
 }

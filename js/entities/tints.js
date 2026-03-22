@@ -1,7 +1,6 @@
 // Index 0 = no tint (base chicken), 1+ = colored
 export const TINT_COLORS = [
-  null,                         // base (no tint)
-  // "rgba(0, 0, 0, 0.7)",         // black
+  null,                           // base (no tint)
   "rgba(0, 100, 255, 0.4)",     // blue
   "rgba(255, 40, 40, 0.4)",     // red
   "rgba(40, 200, 40, 0.4)",     // green
@@ -9,13 +8,26 @@ export const TINT_COLORS = [
   "rgba(255, 100, 200, 0.4)",   // pink
 ];
 
-/**
- * Draw a sprite frame onto ctx with an optional color tint.
- * Uses an offscreen canvas for the tint compositing.
- */
 const tintCanvas = document.createElement("canvas");
 const tintCtx = tintCanvas.getContext("2d");
 
+/**
+ * Draw a sprite frame onto ctx with an optional color tint.
+ * Uses an offscreen canvas for the tint compositing.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {HTMLImageElement} sprite
+ * @param {number} frameX
+ * @param {number} frameY
+ * @param {number} spriteWidth
+ * @param {number} spriteHeight
+ * @param {number} x
+ * @param {number} y
+ * @param {number} drawWidth
+ * @param {number} drawHeight
+ * @param {boolean} facingRight
+ * @param {string | null} tint
+ * @param {number} [alpha=1.0]
+ */
 export function drawTintedSprite(ctx, sprite, frameX, frameY, spriteWidth, spriteHeight, x, y, drawWidth, drawHeight, facingRight, tint, alpha = 1.0) {
   tintCanvas.width = drawWidth;
   tintCanvas.height = drawHeight;

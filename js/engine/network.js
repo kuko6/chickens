@@ -16,7 +16,10 @@ export class NetworkManager {
     this.onStart = null;
   }
 
-  /** @returns {Promise<void>} resolves once the server sends the id message, or on failure */
+  /**
+   * Open a WebSocket connection and set up message handlers.
+   * Sets this.ready to a promise that resolves once the server sends the id message, or on failure.
+   */
   connect() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
@@ -66,7 +69,6 @@ export class NetworkManager {
           this.onReady?.(data.id, data.ready);
           break;
         case "start":
-          this.roundSeed = data.roundSeed;
           this.onStart?.(data.roundSeed);
           break;
       }
@@ -92,7 +94,10 @@ export class NetworkManager {
     };
   }
 
-  /** Send local chicken state to the server */
+  /**
+   * Send local chicken state to the server.
+   * @param {import('../entities/chicken.js').Chicken} chicken
+   */
   sendState(chicken) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
@@ -112,19 +117,24 @@ export class NetworkManager {
     }));
   }
 
-  /** Notify other clients this player is dead */
+  /** Notify other clients that this player is dead. */
   sendDead() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({ type: "state", dead: true }));
   }
 
-  /** Send ready toggle to server */
+  /** Toggle the local player's ready state on the server. */
   sendReady() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({ type: "ready" }));
   }
 
-  /** Send customization change to server */
+  /**
+   * Broadcast a customization change to other clients.
+   * @param {string} spriteSet
+   * @param {number} colorIndex
+   * @param {string} name
+   */
   sendCustomize(spriteSet, colorIndex, name) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 

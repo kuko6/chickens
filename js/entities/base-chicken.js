@@ -1,6 +1,7 @@
 import { TINT_COLORS, drawTintedSprite } from "./tints.js";
 
 export class BaseChicken {
+  /** @param {Object} assets */
   constructor(assets) {
     this.assets = assets;
 
@@ -56,9 +57,13 @@ export class BaseChicken {
     this.name = appearance.name;
   }
 
-  /** @param {CanvasRenderingContext2D} ctx */
+  /**
+   * Draw the chicken sprite with optional color tint, cluck bubble, and name tag.
+   * Selects the correct animation frame based on current state (idle/run/jump/glide).
+   * @param {CanvasRenderingContext2D} ctx
+   */
   render(ctx) {
-    const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
+    const set = this.assets.spriteSets[this.spriteSetName];
 
     let state;
     if (this.isGliding) state = "glide";

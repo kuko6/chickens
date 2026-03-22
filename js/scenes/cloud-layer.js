@@ -47,6 +47,7 @@ export class CloudLayer {
     }
   }
 
+  /** Advance cloud drift for both parallax layers. */
   update() {
     for (let layer = 0; layer < 2; layer++) {
       if (this.clouds[layer].length > 0) {

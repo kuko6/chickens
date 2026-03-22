@@ -51,10 +51,13 @@ export class Chicken extends BaseChicken {
     this.autoRun = false;
   }
 
-  /** @param {number} dt */
+  /**
+   * Process input, apply physics (jump, glide, gravity), handle cluck sound,
+   * and advance animation frames. dt is currently unused — movement is frame-based
+   * at a fixed 60 FPS tick rate.
+   * @param {number} dt
+   */
   update(dt) {
-    // TODO: use dt for movement in the actuall game
-
     const jumpHeld = this.input.isDown("jump");
     const inputX = (this.input.isDown("right") ? 1 : 0) - (this.input.isDown("left") ? 1 : 0);
     const inputY = (this.input.isDown("down") ? 1 : 0) - (this.input.isDown("up") ? 1 : 0);
@@ -113,7 +116,7 @@ export class Chicken extends BaseChicken {
     }
 
     // cluck
-    const cluckSound = (this.assets.spriteSets[this.spriteSetName] || this.assets.sprites).cluckSound;
+    const cluckSound = this.assets.spriteSets[this.spriteSetName].cluckSound;
     if (this.input.isDown("cluck") && !this.isClucking && cluckSound) {
       this.isClucking = true;
       this.cluckFrame = 0;
