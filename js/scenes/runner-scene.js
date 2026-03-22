@@ -33,8 +33,6 @@ export class RunnerScene {
     this.networkSync = null;
     this.cameraX = 0;
 
-    // will be set by lobby before enter()
-    this.chickenState = null;
     this.roundSeed = 0;
   }
 
@@ -46,14 +44,8 @@ export class RunnerScene {
       height: this.canvasH,
     });
 
-    // apply appearance from lobby
-    if (this.chickenState) {
-      this.chicken.setSpriteSet(this.chickenState.spriteSetName);
-      if (this.chickenState.colorIndex != null) {
-        this.chicken.setColorIndex(this.chickenState.colorIndex);
-      }
-      this.chicken.name = this.chickenState.name || "";
-    }
+    // apply appearance from shared state
+    this.chicken.applyAppearance(this.context.appearance);
 
     // spread chickens evenly from the center of the y axis
     const totalPlayers = 1 + this.network.remotePlayers.size;
@@ -75,7 +67,7 @@ export class RunnerScene {
 
     // network sync
     this.networkSync = new NetworkSync(this.network, this.assets);
-    this.networkSync.init(this.chicken);
+    this.networkSync.init(this.chicken, this.context.appearance);
 
     // ground tile config
     this.tileSize = 16;
@@ -107,14 +99,7 @@ export class RunnerScene {
   }
 
   returnToLobby() {
-    const lobby = new LobbyScene(this.context);
-    lobby.chickenState = {
-      spriteSetName: this.chicken.spriteSetName,
-      colorIndex: this.chicken.colorIndex,
-      tint: this.chicken.tint,
-      name: this.chicken.name,
-    };
-    this.switchScene(lobby);
+    this.switchScene(new LobbyScene(this.context));
   }
 
   /** @param {number} dt */

@@ -13,46 +13,26 @@ export class CustomizeOverlay {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {Object} assets
-   * @param {function(string, number, string): void} onChange - (spriteSet, colorIndex, name)
+   * @param {{spriteSetName: string, colorIndex: number, name: string}} appearance
+   * @param {function(): void} onNetworkSync - called after appearance changes so the caller can broadcast
    */
-  constructor(canvas, assets, onChange) {
+  constructor(canvas, assets, appearance, onNetworkSync) {
     this.canvas = canvas;
     this.assets = assets;
-    this.onChange = onChange;
+    this.appearance = appearance;
+    this.onNetworkSync = onNetworkSync;
 
     this.open = false;
-    this.selectedSpriteSetValue = "default";
-    this.selectedColorIndexValue = 0;
-    this.playerName = "";
-
     this.styleButtons = [];
 
     this.buildDom();
     this.syncStyleSelection();
   }
 
-  get selectedSpriteSet() {
-    return this.selectedSpriteSetValue;
-  }
-
-  set selectedSpriteSet(value) {
-    this.selectedSpriteSetValue = value;
-    this.syncStyleSelection();
-  }
-
-  get selectedColorIndex() {
-    return this.selectedColorIndexValue;
-  }
-
-  set selectedColorIndex(value) {
-    this.selectedColorIndexValue = value;
-    this.syncStyleSelection();
-  }
-
   /** Returns the internal style index that represents the current spriteSet + colorIndex combo. */
   get activeStyleIndex() {
-    if (this.selectedSpriteSetValue === "imro") return IMRO_STYLE_INDEX;
-    return this.selectedColorIndexValue;
+    if (this.appearance.spriteSetName === "imro") return IMRO_STYLE_INDEX;
+    return this.appearance.colorIndex;
   }
 
   buildDom() {
@@ -130,8 +110,11 @@ export class CustomizeOverlay {
       outline: none;
       margin-bottom: 10px;
     `;
+    if (this.appearance.name) {
+      this.nameInput.value = this.appearance.name;
+    }
     this.nameInput.addEventListener("input", () => {
-      this.playerName = this.nameInput.value;
+      this.appearance.name = this.nameInput.value;
       this.emitChange();
     });
     this.nameInput.addEventListener("keydown", (e) => e.stopPropagation());
@@ -161,8 +144,8 @@ export class CustomizeOverlay {
         background: ${this.solidColor(TINT_COLORS[i])};
       `;
       swatch.addEventListener("click", () => {
-        this.selectedSpriteSetValue = "default";
-        this.selectedColorIndexValue = i;
+        this.appearance.spriteSetName = "default";
+        this.appearance.colorIndex = i;
         this.syncStyleSelection();
         this.emitChange();
       });
@@ -188,8 +171,8 @@ export class CustomizeOverlay {
         justify-content: center;
       `;
       imroBtn.addEventListener("click", () => {
-        this.selectedSpriteSetValue = "imro";
-        this.selectedColorIndexValue = 0;
+        this.appearance.spriteSetName = "imro";
+        this.appearance.colorIndex = 0;
         this.syncStyleSelection();
         this.emitChange();
       });
@@ -240,15 +223,15 @@ export class CustomizeOverlay {
     if (!ctx) return;
 
     const setData = this.assets.spriteSets[set.name];
-    if (!setData?.idle) return;
+    if (!setData?.spriteSheet) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(setData.idle, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(setData.spriteSheet, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
   }
 
   emitChange() {
-    this.onChange(this.selectedSpriteSetValue, this.selectedColorIndexValue, this.playerName);
+    this.onNetworkSync?.();
   }
 
   setOpen(open) {

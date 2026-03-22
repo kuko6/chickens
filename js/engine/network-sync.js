@@ -15,19 +15,23 @@ export class NetworkSync {
   /**
    * Wire up network callbacks.
    * @param {import('../entities/chicken.js').Chicken} chicken
-   * @param {Object} [overlay]
+   * @param {{spriteSetName: string, colorIndex: number, name: string}} [appearance]
    */
-  init(chicken, overlay) {
+  init(chicken, appearance) {
     this.network.onId = (colorIndex) => {
-      chicken.setColorIndex(colorIndex);
-      if (overlay) overlay.selectedColorIndex = colorIndex;
-      this.network.sendCustomize(chicken.spriteSetName, colorIndex, chicken.name);
+      if (appearance) {
+        appearance.colorIndex = colorIndex;
+        chicken.applyAppearance(appearance);
+        this.network.sendCustomize(appearance.spriteSetName, colorIndex, appearance.name);
+      } else {
+        chicken.setColorIndex(colorIndex);
+      }
     };
 
-    // if the id message arrived before init (e.g. awaiting ready), apply now
-    // skip if chicken already has a colorIndex (re-entry or scene transition)
-    if (this.network.colorIndex !== null && chicken.colorIndex == null) {
+    // if the id message arrived before init, apply the server-assigned color once
+    if (this.network.colorIndex !== null) {
       this.network.onId(this.network.colorIndex);
+      this.network.colorIndex = null;
     }
 
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {

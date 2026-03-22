@@ -29,9 +29,6 @@ export class LobbyScene {
     this.localReady = false;
     this.readyPlayers = new Set(); // ids of ready remote players
 
-    // set by runner when returning to lobby after game over
-    this.chickenState = null;
-
     this.onKeyDown = null;
   }
 
@@ -47,39 +44,34 @@ export class LobbyScene {
     this.chicken.y = this.chicken.minY + Math.random() * (this.chicken.maxY - this.chicken.minY);
     this.chicken.facingRight = Math.random() < 0.5;
 
-    // restore appearance from previous round (color is server-assigned on first join)
-    if (this.chickenState) {
-      this.chicken.setSpriteSet(this.chickenState.spriteSetName);
-      if (this.chickenState.colorIndex != null) {
-        this.chicken.setColorIndex(this.chickenState.colorIndex);
-      }
-      this.chicken.name = this.chickenState.name || "";
-    }
+    // apply appearance from shared state
+    const appearance = this.context.appearance;
+    this.chicken.applyAppearance(appearance);
 
     // customization overlay
     this.overlay = new CustomizeOverlay(
       this.canvas,
       this.assets,
-      (spriteSet, colorIndex, name) => {
-        this.chicken.setSpriteSet(spriteSet);
-        this.chicken.setColorIndex(colorIndex);
-        this.chicken.name = name;
-        this.network.sendCustomize(spriteSet, colorIndex, name);
+      appearance,
+      () => {
+        this.chicken.applyAppearance(appearance);
+        this.network.sendCustomize(appearance.spriteSetName, appearance.colorIndex, appearance.name);
       },
     );
-    this.overlay.selectedSpriteSet = this.chicken.spriteSetName;
-    this.overlay.selectedColorIndex = this.chicken.colorIndex ?? 0;
-    if (this.chicken.name) {
-      this.overlay.playerName = this.chicken.name;
-      this.overlay.nameInput.value = this.chicken.name;
-    }
 
     // network sync
     this.networkSync = new NetworkSync(this.network, this.assets);
-    this.networkSync.init(this.chicken, this.overlay);
+    this.networkSync.init(this.chicken, appearance);
+
+    // refresh overlay button highlights when server assigns a color
+    const origOnId = this.network.onId;
+    this.network.onId = (colorIndex) => {
+      origOnId(colorIndex);
+      this.overlay.syncStyleSelection();
+    };
 
     // sync initial appearance to server so other clients see it
-    this.network.sendCustomize(this.chicken.spriteSetName, this.chicken.colorIndex ?? 0, this.chicken.name);
+    this.network.sendCustomize(appearance.spriteSetName, appearance.colorIndex, appearance.name);
 
     // ready system
     this.localReady = false;
@@ -143,12 +135,6 @@ export class LobbyScene {
 
   startRunner(roundSeed) {
     const runner = new RunnerScene(this.context);
-    runner.chickenState = {
-      spriteSetName: this.chicken.spriteSetName,
-      colorIndex: this.chicken.colorIndex,
-      tint: this.chicken.tint,
-      name: this.chicken.name,
-    };
     runner.roundSeed = roundSeed;
     this.switchScene(runner);
   }

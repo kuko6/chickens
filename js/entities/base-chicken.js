@@ -49,43 +49,45 @@ export class BaseChicken {
     this.tint = TINT_COLORS[colorIndex % TINT_COLORS.length];
   }
 
+  /** @param {{spriteSetName: string, colorIndex: number, name: string}} appearance */
+  applyAppearance(appearance) {
+    this.setSpriteSet(appearance.spriteSetName);
+    this.setColorIndex(appearance.colorIndex);
+    this.name = appearance.name;
+  }
+
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
     const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
-    let sprite, frameX;
 
-    if (this.isGliding) {
-      sprite = set.glide;
-      frameX = this.currentFrame * this.spriteWidth;
-    } else if (this.isJumping) {
-      sprite = set.jump;
-      frameX = 0;
-    } else if (this.isMoving) {
-      sprite = set.run;
-      frameX = this.currentFrame * this.spriteWidth;
-    } else {
-      sprite = set.idle;
-      frameX = 0;
-    }
+    let state;
+    if (this.isGliding) state = "glide";
+    else if (this.isJumping) state = "jump";
+    else if (this.isMoving) state = "run";
+    else state = "idle";
+
+    const anim = set.animations[state];
+    const frameX = (this.currentFrame % anim.frames) * this.spriteWidth;
+    const frameY = anim.row * this.spriteHeight;
 
     const drawWidth = this.width;
     const drawHeight = this.height;
     const drawY = this.y + this.airY;
 
-    drawTintedSprite(ctx, sprite, frameX, this.spriteWidth, this.spriteHeight, this.x, drawY, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
+    drawTintedSprite(ctx, set.spriteSheet, frameX, frameY, this.spriteWidth, this.spriteHeight, this.x, drawY, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
 
     // cluck bubble — decorative only, excluded from collision
     if (this.isClucking) {
-      const cluckSprite = set.cluck || this.assets.sprites.cluck;
-      if (cluckSprite) {
-        const cluckingSize = 18;
-        const cluckingFrameX = this.cluckFrame * cluckingSize;
+      const cluckAnim = set.animations.cluck;
+      if (cluckAnim) {
+        const cluckFrameX = (this.cluckFrame % cluckAnim.frames) * this.spriteWidth;
+        const cluckFrameY = cluckAnim.row * this.spriteHeight;
         const cluckingDraw = this.width;
         const cluckingX = this.facingRight
           ? this.x + drawWidth
           : this.x - cluckingDraw;
 
-        drawTintedSprite(ctx, cluckSprite, cluckingFrameX, cluckingSize, cluckingSize, cluckingX, drawY, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
+        drawTintedSprite(ctx, set.spriteSheet, cluckFrameX, cluckFrameY, this.spriteWidth, this.spriteHeight, cluckingX, drawY, cluckingDraw, cluckingDraw, this.facingRight, null, this.opacity);
       }
     }
 

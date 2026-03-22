@@ -43,7 +43,8 @@ const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
 const horizonY = 208; // ground starts here — 400 - 208 = 192 = 4 rows of 48px tiles
-const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene, cloudLayer, rng, horizonY };
+const appearance = { spriteSetName: "default", colorIndex: 0, name: "" };
+const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene, cloudLayer, rng, horizonY, appearance };
 
 let currentScene = null;
 function switchScene(scene) {
