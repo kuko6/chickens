@@ -5,6 +5,7 @@ import { GameLoop } from "./engine/game-loop.js";
 import { LobbyScene } from "./scenes/lobby-scene.js";
 import { CloudLayer } from "./scenes/cloud-layer.js";
 import { SeededRandom } from "./engine/seeded-random.js";
+import { NetworkSync } from "./engine/network-sync.js";
 
 /**
  * Keep logical game coordinates stable while rendering at device pixel ratio.
@@ -42,9 +43,10 @@ const mapSeed = network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
 const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
-const horizonY = 208; // ground starts here — 400 - 208 = 192 = 4 rows of 48px tiles
+const horizonY = 208; // ground starts here (400 - 208 = 192 = 4 rows of 48px tiles)
 const appearance = { spriteSetName: "default", colorIndex: 0, name: "" };
-const sceneContext = { canvas, ctx, viewport, assets, input, network, switchScene, cloudLayer, rng, horizonY, appearance };
+const networkSync = new NetworkSync(network, assets);
+const sceneContext = { canvas, ctx, viewport, assets, input, network, networkSync, switchScene, cloudLayer, rng, horizonY, appearance };
 
 let currentScene = null;
 function switchScene(scene) {

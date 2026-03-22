@@ -1,5 +1,3 @@
-import { NetworkSync } from "../engine/network-sync.js";
-
 export class BaseScene {
   constructor(context) {
     this.ctx = context.ctx;
@@ -14,10 +12,10 @@ export class BaseScene {
     this.cloudLayer = context.cloudLayer;
     this.rng = context.rng;
     this.horizonY = context.horizonY;
+    this.networkSync = context.networkSync;
     this.context = context;
 
     this.chicken = null;
-    this.networkSync = null;
     this.cameraX = 0;
     this.onKeyDown = null;
   }
@@ -31,11 +29,6 @@ export class BaseScene {
     const { groundTileset, groundEdgeTileset } = this.assets.environment;
     this.edgeTileCount = groundEdgeTileset.width / this.tileSize;
     this.groundTileCount = groundTileset.width / this.tileSize;
-  }
-
-  initNetworkSync(appearance) {
-    this.networkSync = new NetworkSync(this.network, this.assets);
-    this.networkSync.init(this.chicken, appearance);
   }
 
   renderBackground() {
@@ -97,9 +90,5 @@ export class BaseScene {
       this.onKeyDown = null;
     }
     this.chicken = null;
-    if (this.networkSync) {
-      this.networkSync.destroy();
-      this.networkSync = null;
-    }
   }
 }

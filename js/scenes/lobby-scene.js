@@ -38,13 +38,13 @@ export class LobbyScene extends BaseScene {
       },
     );
 
-    // network sync
-    this.initNetworkSync(appearance);
+    // attach local chicken to network sync
+    this.networkSync.attach(this.chicken, appearance);
 
     // refresh overlay button highlights when server assigns a color
-    const origOnId = this.network.onId;
+    this.origOnId = this.network.onId;
     this.network.onId = (colorIndex) => {
-      origOnId?.(colorIndex);
+      this.origOnId?.(colorIndex);
       this.overlay.syncStyleSelection();
     };
 
@@ -68,16 +68,16 @@ export class LobbyScene extends BaseScene {
       this.startRunner(roundSeed);
     };
 
-    const origOnJoin = this.network.onJoin;
+    this.origOnJoin = this.network.onJoin;
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {
-      origOnJoin?.(id, colorIndex, spriteSet, name);
+      this.origOnJoin?.(id, colorIndex, spriteSet, name);
       this.localReady = false;
       this.readyPlayers.clear();
     };
 
-    const origOnLeave = this.network.onLeave;
+    this.origOnLeave = this.network.onLeave;
     this.network.onLeave = (id) => {
-      origOnLeave?.(id);
+      this.origOnLeave?.(id);
       this.readyPlayers.delete(id);
       this.localReady = false;
     };
@@ -147,6 +147,9 @@ export class LobbyScene extends BaseScene {
   exit() {
     this.network.onReady = null;
     this.network.onStart = null;
+    this.network.onId = this.origOnId;
+    this.network.onJoin = this.origOnJoin;
+    this.network.onLeave = this.origOnLeave;
     if (this.overlay) {
       this.overlay.destroy();
       this.overlay = null;

@@ -48,8 +48,8 @@ export class RunnerScene extends BaseScene {
     // enable auto-run animation
     this.chicken.autoRun = true;
 
-    // network sync
-    this.initNetworkSync(this.context.appearance);
+    // attach local chicken to network sync
+    this.networkSync.attach(this.chicken, this.context.appearance);
 
     this.initGround();
 
