@@ -58,7 +58,7 @@ export class BaseChicken {
 
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
-    const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
+    const set = this.assets.spriteSets[this.spriteSetName];
 
     let state;
     if (this.isGliding) state = "glide";

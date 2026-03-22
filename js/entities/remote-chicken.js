@@ -30,7 +30,7 @@ export class RemoteChicken extends BaseChicken {
 
     // play cluck sound when remote chicken starts clucking
     if (state.isClucking && !this.isClucking) {
-      const set = this.assets.spriteSets[this.spriteSetName] || this.assets.sprites;
+      const set = this.assets.spriteSets[this.spriteSetName];
       if (set.cluckSound) {
         set.cluckSound.currentTime = 0;
         set.cluckSound.play().catch(() => {});

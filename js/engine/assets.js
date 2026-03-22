@@ -88,9 +88,6 @@ export async function loadAssets() {
 
   return {
     spriteSets,
-    // backward compat alias
-    sprites: spriteSets["default"],
-    sounds: { cluck: spriteSets["default"].cluckSound },
     // environment: { clouds, groundTileset, groundEdgeTileset, obstacles: [fenceSlim, fenceWide] },
     environment: {
       clouds,
