@@ -22,7 +22,8 @@ export class NetworkManager {
    */
   connect() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
+    const lobbyId = location.pathname.slice(1);
+    this.ws = new WebSocket(`${protocol}//${location.host}/ws/${lobbyId}`);
 
     this.ready = new Promise((resolve) => { this.resolveReady = resolve; });
 
