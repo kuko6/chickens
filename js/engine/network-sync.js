@@ -1,5 +1,8 @@
 import { RemoteChicken } from "../entities/remote-chicken.js";
 
+/** Minimum interval between state sends (50ms = 20 ticks/sec). */
+const SEND_INTERVAL = 50;
+
 export class NetworkSync {
   /**
    * @param {import('./network.js').NetworkManager} network
@@ -10,6 +13,9 @@ export class NetworkSync {
     this.assets = assets;
     /** @type {Map<string, RemoteChicken>} */
     this.remoteChickens = new Map();
+
+    this.lastSentState = null;
+    this.sendAccumulator = 0;
 
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {
       const remote = new RemoteChicken(this.assets, colorIndex, spriteSet, name);
@@ -65,6 +71,7 @@ export class NetworkSync {
       remote.minY = chicken.minY;
       remote.maxY = chicken.maxY;
       remote.dead = false;
+      remote.hasReceivedState = false;
     }
 
     // create remote chickens for players that already exist
@@ -76,29 +83,78 @@ export class NetworkSync {
         this.remoteChickens.set(id, remote);
       }
     }
+
+    // reset send state so the first update after a scene change always sends
+    this.lastSentState = null;
+    this.sendAccumulator = SEND_INTERVAL;
   }
 
   /**
-   * Per-frame: send local state and apply remote states.
+   * Per-frame: throttle sends to 20Hz, skip when state hasn't changed,
+   * and interpolate remote chickens every frame for smooth rendering.
    * @param {import('../entities/chicken.js').Chicken} chicken
    */
   update(chicken) {
-    // TODO: can be optimized better as now it sends 
-    // 60 updates even when nothing changes
-    this.network.sendState(chicken);
+    this.sendAccumulator += 1000 / 60; // ~16.67ms per frame
+
+    if (this.sendAccumulator >= SEND_INTERVAL) {
+      this.sendAccumulator = 0;
+
+      if (this.#hasStateChanged(chicken)) {
+        this.network.sendState(chicken);
+        this.#snapshotState(chicken);
+      }
+    }
+
     this.receive();
   }
 
-  /** Apply remote states without sending (used when spectating). */
+  /** Apply remote states and interpolate positions. */
   receive() {
     for (const [id, remote] of this.remoteChickens) {
       const state = this.network.remotePlayers.get(id);
       if (state) remote.applyState(state);
+      remote.interpolate();
     }
   }
 
   /** @returns {RemoteChicken[]} */
   getRemoteChickens() {
     return [...this.remoteChickens.values()];
+  }
+
+  /** Compare current chicken state against the last sent snapshot. */
+  #hasStateChanged(chicken) {
+    const last = this.lastSentState;
+    if (!last) return true;
+
+    return (
+      chicken.x !== last.x ||
+      chicken.y !== last.y ||
+      chicken.airY !== last.a ||
+      chicken.facingRight !== last.f ||
+      chicken.isMoving !== last.m ||
+      chicken.isJumping !== last.j ||
+      chicken.isGliding !== last.g ||
+      chicken.isClucking !== last.c ||
+      chicken.currentFrame !== last.fr ||
+      chicken.cluckFrame !== last.cf
+    );
+  }
+
+  /** Save a snapshot of the current state for dirty checking. */
+  #snapshotState(chicken) {
+    this.lastSentState = {
+      x: chicken.x,
+      y: chicken.y,
+      a: chicken.airY,
+      f: chicken.facingRight,
+      m: chicken.isMoving,
+      j: chicken.isJumping,
+      g: chicken.isGliding,
+      c: chicken.isClucking,
+      fr: chicken.currentFrame,
+      cf: chicken.cluckFrame,
+    };
   }
 }
