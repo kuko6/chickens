@@ -85,11 +85,7 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
 
     lobby.clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "", ready: false });
     socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed: lobby.mapSeed }));
-    broadcast(
-      lobby,
-      JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }),
-      id,
-    );
+    broadcast(lobby, JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }), id);
 
     // tell the new client about existing players
     for (const [otherId, other] of lobby.clients) {
@@ -114,7 +110,7 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
     const data = JSON.parse(e.data);
     data.id = id;
 
-    // store customization on the server so new joiners see it
+    // store player customization on the server
     if (data.type === "customize") {
       const client = lobby.clients.get(id);
       if (client) {
@@ -124,13 +120,11 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
       }
     }
 
-    // handle ready toggle
+    // handle ready check
     if (data.type === "ready") {
       const client = lobby.clients.get(id);
       if (client) {
         client.ready = !client.ready;
-
-        // broadcast this player's ready state to everyone (including sender)
         broadcast(lobby, JSON.stringify({ type: "ready", id, ready: client.ready }));
 
         // check if all players are ready
@@ -138,7 +132,7 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
           const roundSeed = Math.floor(Math.random() * 0x7fffffff);
           broadcast(lobby, JSON.stringify({ type: "start", roundSeed }));
 
-          // reset ready state for next round
+          // reset ready state
           for (const c of lobby.clients.values()) c.ready = false;
         }
       }
