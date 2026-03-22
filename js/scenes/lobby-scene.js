@@ -11,6 +11,7 @@ export class LobbyScene extends BaseScene {
     this.readyPlayers = new Set();
   }
 
+  /** Set up lobby: chicken, overlay, network handlers, and ready system. */
   enter() {
     this.chicken = new Chicken(this.input, this.assets, {
       width: this.canvasW,
@@ -65,7 +66,7 @@ export class LobbyScene extends BaseScene {
     };
 
     this.network.onStart = (roundSeed) => {
-      this.startRunner(roundSeed);
+      this.startRunnerScene(roundSeed);
     };
 
     this.origOnJoin = this.network.onJoin;
@@ -92,19 +93,24 @@ export class LobbyScene extends BaseScene {
           this.localReady = !this.localReady;
         } else {
           const roundSeed = Math.floor(Math.random() * 0x7fffffff);
-          this.startRunner(roundSeed);
+          this.startRunnerScene(roundSeed);
         }
       }
     };
     window.addEventListener("keydown", this.onKeyDown);
   }
 
-  startRunner(roundSeed) {
+  /** @param {number} roundSeed */
+  startRunnerScene(roundSeed) {
     const runner = new RunnerScene(this.context);
     runner.roundSeed = roundSeed;
     this.switchScene(runner);
   }
 
+  /** 
+   * Update clouds, chickens and sync them across network.
+   * @param {number} dt 
+  */
   update(dt) {
     this.cloudLayer.update();
     this.chicken.update(dt);

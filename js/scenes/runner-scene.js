@@ -19,6 +19,7 @@ export class RunnerScene extends BaseScene {
     this.roundSeed = 0;
   }
 
+  /** Set up runner: filtered input, chicken positioning, obstacles, and scoring. */
   enter() {
     // create chicken with filtered input (only vertical + jump + cluck)
     const filteredInput = new InputFilter(this.input, ["up", "down", "jump", "cluck"]);
@@ -76,6 +77,10 @@ export class RunnerScene extends BaseScene {
     this.switchScene(new LobbyScene(this.context));
   }
 
+  /** 
+   * Update clouds, chickens and sync them across network. Check for collisions.
+   * @param {number} dt 
+  */
   update(dt) {
     this.cloudLayer.update();
 
@@ -132,10 +137,16 @@ export class RunnerScene extends BaseScene {
     }
   }
 
+  /** @returns {import('../entities/remote-chicken.js').RemoteChicken[]} */
   getAliveRemotes() {
     return this.networkSync.getRemoteChickens().filter((r) => !r.dead);
   }
 
+  /**
+   * Procedurally generate obstacles ahead of camera using seeded RNG.
+   * Gap size, variant, and spawn chance are all deterministic from roundSeed
+   * so all clients produce the same obstacle layout.
+   */
   spawnObstacles() {
     const spawnEdge = this.cameraX + this.canvasW + 200;
     const obstacleSprites = this.assets.environment.obstacles;

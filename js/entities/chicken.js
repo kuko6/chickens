@@ -51,8 +51,12 @@ export class Chicken extends BaseChicken {
     this.autoRun = false;
   }
 
-  // dt is currently unused — movement is frame-based at a fixed 60 FPS tick rate
-  /** @param {number} dt */
+  /**
+   * Process input, apply physics (jump, glide, gravity), handle cluck sound,
+   * and advance animation frames. dt is currently unused — movement is frame-based
+   * at a fixed 60 FPS tick rate.
+   * @param {number} dt
+   */
   update(dt) {
     const jumpHeld = this.input.isDown("jump");
     const inputX = (this.input.isDown("right") ? 1 : 0) - (this.input.isDown("left") ? 1 : 0);

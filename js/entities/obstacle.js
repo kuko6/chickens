@@ -49,6 +49,7 @@ export class Obstacle {
   /**
    * AABB collision check against a chicken.
    * Checks each segment independently — gaps between segments are passable.
+   * @param {import('../entities/chicken.js').Chicken} chicken
    */
   collides(chicken) {
     if (chicken.airY < -10) return false;

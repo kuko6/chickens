@@ -12,7 +12,7 @@ function loadImage(src) {
   });
 }
 
-/** Sprite set definitions — add new sets here */
+/** Sprite set definitions */
 export const SPRITE_SETS = [
   {
     name: "default",
@@ -46,10 +46,9 @@ export const SPRITE_SETS = [
   },
 ];
 
-/**
- * Loads all game assets and returns them as a keyed object.
- * @returns {Promise<{spriteSets: Object, sprites: Object, sounds: Object}>}
- */
+/** Loads all game assets and returns them as a keyed object. 
+ * @returns {Promise<{spriteSets: Object, environment: Object}>} 
+*/
 export async function loadAssets() {
   const setEntries = await Promise.all(
     SPRITE_SETS.map(async (set) => {

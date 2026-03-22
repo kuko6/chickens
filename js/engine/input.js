@@ -41,6 +41,7 @@ export class InputManager {
     this.actions[action] = isDown;
   }
 
+  /** Reset all held actions. */
   clear() {
     this.actions = {};
   }
@@ -50,6 +51,7 @@ export class InputManager {
     return Boolean(this.actions[action]);
   }
 
+  /** Remove all event listeners and clear state. */
   destroy() {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);

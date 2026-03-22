@@ -14,7 +14,10 @@ export class RemoteChicken extends BaseChicken {
     this.name = name;
   }
 
-  /** Apply state received from the network */
+  /**
+   * Apply state received from the network.
+   * @param {Object} state
+   */
   applyState(state) {
     if (state.dead) {
       this.dead = true;

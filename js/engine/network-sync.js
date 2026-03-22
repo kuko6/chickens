@@ -83,6 +83,8 @@ export class NetworkSync {
    * @param {import('../entities/chicken.js').Chicken} chicken
    */
   update(chicken) {
+    // TODO: can be optimized better as now it sends 
+    // 60 updates even when nothing changes
     this.network.sendState(chicken);
     this.receive();
   }

@@ -206,6 +206,10 @@ export class CustomizeOverlay {
     document.addEventListener("click", this.onDocumentClick);
   }
 
+  /**
+   * @param {string} text
+   * @returns {HTMLDivElement}
+   */
   label(text) {
     const el = document.createElement("div");
     el.textContent = text;
@@ -218,6 +222,10 @@ export class CustomizeOverlay {
     return el;
   }
 
+  /**
+   * @param {HTMLCanvasElement} canvas
+   * @param {{name: string, spriteWidth: number, spriteHeight: number}} set
+   */
   drawSpritePreview(canvas, set) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -230,10 +238,12 @@ export class CustomizeOverlay {
     ctx.drawImage(setData.spriteSheet, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
   }
 
+  /** Notify caller that appearance has changed. */
   emitChange() {
     this.onNetworkSync?.();
   }
 
+  /** @param {boolean} open */
   setOpen(open) {
     this.open = open;
     this.panel.style.display = open ? "block" : "none";
@@ -241,6 +251,7 @@ export class CustomizeOverlay {
     if (open) this.nameInput.focus();
   }
 
+  /** Update button borders to reflect the current appearance selection. */
   syncStyleSelection() {
     const active = this.activeStyleIndex;
     for (const { el, styleIndex } of this.styleButtons) {
@@ -250,10 +261,16 @@ export class CustomizeOverlay {
     }
   }
 
+  /**
+   * Convert an RGBA tint string to fully opaque, or return a default color.
+   * @param {string | null} tint
+   * @returns {string}
+   */
   solidColor(tint) {
     return tint ? tint.replace(/[\d.]+\)$/, "1)") : "#f5f5f5";
   }
 
+  /** Remove overlay from DOM and clean up event listeners. */
   destroy() {
     document.removeEventListener("click", this.onDocumentClick);
     this.root.remove();
