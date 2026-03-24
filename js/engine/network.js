@@ -22,7 +22,8 @@ export class NetworkManager {
    */
   connect() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
+    const lobbyId = location.pathname.slice(1);
+    this.ws = new WebSocket(`${protocol}//${location.host}/ws/${lobbyId}`);
 
     this.ready = new Promise((resolve) => { this.resolveReady = resolve; });
 
@@ -105,15 +106,14 @@ export class NetworkManager {
       type: "state",
       x: chicken.x,
       y: chicken.y,
-      airY: chicken.airY,
-      facingRight: chicken.facingRight,
-      isMoving: chicken.isMoving,
-      isJumping: chicken.isJumping,
-      isGliding: chicken.isGliding,
-      isClucking: chicken.isClucking,
-      currentFrame: chicken.currentFrame,
-      cluckFrame: chicken.cluckFrame,
-      spriteSet: chicken.spriteSetName,
+      a: chicken.airY,
+      f: chicken.facingRight,
+      m: chicken.isMoving,
+      j: chicken.isJumping,
+      g: chicken.isGliding,
+      c: chicken.isClucking,
+      fr: chicken.currentFrame,
+      cf: chicken.cluckFrame,
     }));
   }
 
