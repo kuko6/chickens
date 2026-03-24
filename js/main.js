@@ -44,7 +44,8 @@ const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
 const horizonY = 208; // ground starts here (400 - 208 = 192 = 4 rows of 48px tiles)
-const appearance = { spriteSetName: "default", colorIndex: 0, name: "" };
+const lobbyId = window.location.pathname.slice(1);
+const appearance = { spriteSetName: lobbyId === "imro" ? "imro" : "default", colorIndex: 0, name: "" };
 const networkSync = new NetworkSync(network, assets);
 const sceneContext = { canvas, ctx, viewport, assets, input, network, networkSync, switchScene, cloudLayer, rng, horizonY, appearance };
 
