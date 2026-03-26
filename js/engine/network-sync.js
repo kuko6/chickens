@@ -52,9 +52,9 @@ export class NetworkSync {
 
     this.network.onId = (colorIndex) => {
       if (appearance) {
-        appearance.colorIndex = colorIndex;
+        if (!appearance.colorOverride) appearance.colorIndex = colorIndex;
         chicken.applyAppearance(appearance);
-        this.network.sendCustomize(appearance.spriteSetName, colorIndex, appearance.name);
+        this.network.sendCustomize(appearance.spriteSetName, appearance.colorIndex, appearance.name);
       } else {
         chicken.setColorIndex(colorIndex);
       }

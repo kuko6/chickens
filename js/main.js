@@ -3,7 +3,7 @@ import { InputManager } from "./engine/input.js";
 import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
 import { LobbyScene } from "./scenes/lobby-scene.js";
-import { IntroScene } from "./scenes/intro-scene.js";
+import { IntroScene, applyEasterEggs } from "./scenes/intro-scene.js";
 import { CloudLayer } from "./scenes/cloud-layer.js";
 import { SeededRandom } from "./engine/seeded-random.js";
 import { NetworkSync } from "./engine/network-sync.js";
@@ -50,7 +50,10 @@ const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
 const horizonY = 208; // ground starts here (400 - 208 = 192 = 4 rows of 48px tiles)
-const appearance = { spriteSetName: lobbyId === "imro" ? "imro" : "default", colorIndex: 0, name: "" };
+
+const appearance = { spriteSetName: "default", colorIndex: 0, name: "" };
+applyEasterEggs(appearance, "", lobbyId);
+
 const networkSync = new NetworkSync(network, assets);
 const sceneContext = { canvas, ctx, viewport, assets, input, network, networkSync, switchScene, cloudLayer, rng, horizonY, appearance };
 
