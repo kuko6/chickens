@@ -3,6 +3,7 @@ import { InputManager } from "./engine/input.js";
 import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
 import { LobbyScene } from "./scenes/lobby-scene.js";
+import { IntroScene } from "./scenes/intro-scene.js";
 import { CloudLayer } from "./scenes/cloud-layer.js";
 import { SeededRandom } from "./engine/seeded-random.js";
 import { NetworkSync } from "./engine/network-sync.js";
@@ -35,16 +36,20 @@ const assets = await loadAssets();
 
 const input = new InputManager();
 
+const lobbyId = window.location.pathname.slice(1);
+const isIntro = !lobbyId;
+
 const network = new NetworkManager();
-network.connect();
-await network.ready;
+if (!isIntro) {
+  network.connect();
+  await network.ready;
+}
 
 const mapSeed = network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
 const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
 const horizonY = 208; // ground starts here (400 - 208 = 192 = 4 rows of 48px tiles)
-const lobbyId = window.location.pathname.slice(1);
 const appearance = { spriteSetName: lobbyId === "imro" ? "imro" : "default", colorIndex: 0, name: "" };
 const networkSync = new NetworkSync(network, assets);
 const sceneContext = { canvas, ctx, viewport, assets, input, network, networkSync, switchScene, cloudLayer, rng, horizonY, appearance };
@@ -56,7 +61,11 @@ function switchScene(scene) {
   currentScene.enter();
 }
 
-switchScene(new LobbyScene(sceneContext));
+if (isIntro) {
+  switchScene(new IntroScene(sceneContext));
+} else {
+  switchScene(new LobbyScene(sceneContext));
+}
 
 // start
 const loop = new GameLoop(

@@ -13,6 +13,8 @@ export class LobbyScene extends BaseScene {
 
   /** Set up lobby: chicken, overlay, network handlers, and ready system. */
   enter() {
+    this.lobbyId = window.location.pathname.slice(1);
+    this.buildBackButton();
     this.chicken = new Chicken(this.input, this.assets, {
       width: this.canvasW,
       height: this.canvasH,
@@ -107,9 +109,9 @@ export class LobbyScene extends BaseScene {
     this.switchScene(runner);
   }
 
-  /** 
+  /**
    * Update clouds, chickens and sync them across network.
-   * @param {number} dt 
+   * @param {number} dt
   */
   update(dt) {
     this.cloudLayer.update();
@@ -131,8 +133,16 @@ export class LobbyScene extends BaseScene {
     const allChickens = [this.chicken, ...this.networkSync.getRemoteChickens()];
     this.renderChickens(allChickens);
 
-    // draw ready hint
+    // draw lobby code
     const ctx = this.ctx;
+    ctx.save();
+    ctx.font = "10px DepartureMono";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#595e66";
+    ctx.fillText("lobby: " + this.lobbyId, 8, 28);
+    ctx.restore();
+
+    // draw ready hint
     ctx.save();
     const remoteCount = this.networkSync.getRemoteChickens().length;
     const totalPlayers = 1 + remoteCount;
@@ -150,6 +160,28 @@ export class LobbyScene extends BaseScene {
     ctx.restore();
   }
 
+  buildBackButton() {
+    const host = this.canvas.parentElement;
+    if (!host) return;
+    if (getComputedStyle(host).position === "static") host.style.position = "relative";
+
+    this.backButton = document.createElement("a");
+    this.backButton.href = "/";
+    this.backButton.textContent = "< back";
+    this.backButton.style.cssText = `
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      font-family: 'DepartureMono', monospace;
+      font-size: 10px;
+      color: #595e66;
+      text-decoration: none;
+      cursor: pointer;
+      z-index: 5;
+    `;
+    host.appendChild(this.backButton);
+  }
+
   exit() {
     this.network.onReady = null;
     this.network.onStart = null;
@@ -159,6 +191,10 @@ export class LobbyScene extends BaseScene {
     if (this.overlay) {
       this.overlay.destroy();
       this.overlay = null;
+    }
+    if (this.backButton) {
+      this.backButton.remove();
+      this.backButton = null;
     }
     super.exit();
   }
