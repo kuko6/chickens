@@ -2,7 +2,6 @@ import { loadAssets } from "./engine/assets.js";
 import { InputManager } from "./engine/input.js";
 import { NetworkManager } from "./engine/network.js";
 import { GameLoop } from "./engine/game-loop.js";
-import { LobbyScene } from "./scenes/lobby-scene.js";
 import { IntroScene, applyEasterEggs } from "./scenes/intro-scene.js";
 import { CloudLayer } from "./scenes/cloud-layer.js";
 import { SeededRandom } from "./engine/seeded-random.js";
@@ -37,15 +36,10 @@ const assets = await loadAssets();
 const input = new InputManager();
 
 const lobbyId = window.location.pathname.slice(1);
-const isIntro = !lobbyId;
 
 const network = new NetworkManager();
-if (!isIntro) {
-  network.connect();
-  await network.ready;
-}
 
-const mapSeed = network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
+const mapSeed = Math.floor(Math.random() * 0x7fffffff);
 const rng = new SeededRandom(mapSeed);
 
 const cloudLayer = new CloudLayer(viewport.width, assets.environment.clouds, rng);
@@ -55,7 +49,7 @@ const appearance = { spriteSetName: "default", colorIndex: 0, name: "" };
 applyEasterEggs(appearance, "", lobbyId);
 
 const networkSync = new NetworkSync(network, assets);
-const sceneContext = { canvas, ctx, viewport, assets, input, network, networkSync, switchScene, cloudLayer, rng, horizonY, appearance };
+const sceneContext = { canvas, ctx, viewport, assets, input, network, networkSync, switchScene, cloudLayer, rng, horizonY, appearance, lobbyId };
 
 let currentScene = null;
 function switchScene(scene) {
@@ -64,11 +58,7 @@ function switchScene(scene) {
   currentScene.enter();
 }
 
-if (isIntro) {
-  switchScene(new IntroScene(sceneContext));
-} else {
-  switchScene(new LobbyScene(sceneContext));
-}
+switchScene(new IntroScene(sceneContext));
 
 // start
 const loop = new GameLoop(

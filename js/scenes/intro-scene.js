@@ -4,12 +4,18 @@ import { LobbyScene } from "./lobby-scene.js";
 import { SeededRandom } from "../engine/seeded-random.js";
 import { CloudLayer } from "./cloud-layer.js";
 
+/**
+ * Mutates the appearance object based on special name/lobby code combos.
+ * @param {{ spriteSetName: string, colorIndex: number, colorOverride?: boolean }} appearance
+ * @param {string} name - Player name
+ * @param {string} lobbyCode - Lobby code
+ */
 export function applyEasterEggs(appearance, name, lobbyCode) {
   const lower = name.toLowerCase();
 
   if (lobbyCode === "imro") appearance.spriteSetName = "imro";
 
-  if (lower.includes("kami") || lower.includes("imro")) {
+  if (lower.includes("kami") || lower.includes("imro") || lower.includes("matus")) {
     appearance.spriteSetName = "imro";
     appearance.colorIndex = 0;
     appearance.colorOverride = true;
@@ -19,6 +25,9 @@ export function applyEasterEggs(appearance, name, lobbyCode) {
   }
 }
 
+/**
+ * Intro screen scene — shows name/lobby inputs and transitions to LobbyScene on join.
+ */
 export class IntroScene extends BaseScene {
   constructor(context) {
     super(context);
@@ -29,9 +38,14 @@ export class IntroScene extends BaseScene {
     this.initGround();
     this.overlay = new IntroOverlay(this.canvas, (name, lobbyCode) => {
       this.joinLobby(name, lobbyCode);
-    });
+    }, this.context.lobbyId);
   }
 
+  /**
+   * Connects to a lobby and transitions to the LobbyScene.
+   * @param {string} name - Player display name
+   * @param {string} lobbyCode - Lobby identifier to join or create
+   */
   async joinLobby(name, lobbyCode) {
     const ctx = this.context;
     ctx.appearance.name = name;

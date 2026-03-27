@@ -3,7 +3,7 @@ export class IntroOverlay {
    * @param {HTMLCanvasElement} canvas
    * @param {(name: string, lobbyCode: string) => void} onJoin
    */
-  constructor(canvas, onJoin) {
+  constructor(canvas, onJoin, initialLobbyCode = "") {
     const host = canvas.parentElement;
     if (!host) throw new Error("Canvas must be mounted before creating overlay.");
     if (getComputedStyle(host).position === "static") host.style.position = "relative";
@@ -28,24 +28,45 @@ export class IntroOverlay {
       margin-bottom: 36px;
     `;
 
-    const icon = document.createElement("img");
-    icon.src = "assets/icons/favicon-32x32.png";
+    const spriteSize = 20;
+    const runRow = 3;
+    const runFrames = 2;
+    const scale = 3;
+    const icon = document.createElement("canvas");
+    icon.width = spriteSize * scale;
+    icon.height = spriteSize * scale;
     icon.style.cssText = `
-      width: 60px;
-      height: 60px;
+      width: ${spriteSize * scale}px;
+      height: ${spriteSize * scale}px;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     `;
+    const spriteImg = new Image();
+    spriteImg.src = "assets/sprites/chickens/base.png";
+    let frame = 0;
+    const drawFrame = () => {
+      const iconCtx = icon.getContext("2d");
+      iconCtx.clearRect(0, 0, icon.width, icon.height);
+      iconCtx.imageSmoothingEnabled = false;
+      iconCtx.drawImage(
+        spriteImg,
+        frame * spriteSize, runRow * spriteSize, spriteSize, spriteSize,
+        0, 0, spriteSize * scale, spriteSize * scale,
+      );
+      frame = (frame + 1) % runFrames;
+    };
+    spriteImg.onload = () => drawFrame();
+    this._runInterval = setInterval(drawFrame, 150);
 
     const title = document.createElement("div");
-    title.textContent = "Chickens";
+    title.textContent = "ChickenRun";
     title.style.cssText = `
       font-size: 42px;
       color: #272744;
     `;
 
-    titleRow.appendChild(icon);
     titleRow.appendChild(title);
+    titleRow.appendChild(icon);
 
     const nameInput = this.makeInput("name", 16);
     nameInput.style.textTransform = "none";
@@ -63,6 +84,7 @@ export class IntroOverlay {
     lobbyInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") joinBtn.click();
     });
+    if (initialLobbyCode) lobbyInput.value = initialLobbyCode;
     row.appendChild(lobbyInput);
     row.appendChild(joinBtn);
 
@@ -124,6 +146,9 @@ export class IntroOverlay {
     return input;
   }
 
+  /**
+   * @param {string} text
+   */
   makeButton(text) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -151,6 +176,7 @@ export class IntroOverlay {
   }
 
   destroy() {
+    clearInterval(this._runInterval);
     this.root.remove();
   }
 }
