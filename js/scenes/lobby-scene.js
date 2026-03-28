@@ -116,7 +116,7 @@ export class LobbyScene extends BaseScene {
   update(dt) {
     this.cloudLayer.update();
     this.chicken.update(dt);
-    this.networkSync.update(this.chicken);
+    this.networkSync.update(this.chicken, dt);
 
     // clamp chicken to lobby area
     const maxX = this.canvasW - this.chicken.width;

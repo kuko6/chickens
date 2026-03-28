@@ -93,9 +93,10 @@ export class NetworkSync {
    * Per-frame: throttle sends to 20Hz, skip when state hasn't changed,
    * and interpolate remote chickens every frame for smooth rendering.
    * @param {import('../entities/chicken.js').Chicken} chicken
+   * @param {number} dt - elapsed time in ms since last frame
    */
-  update(chicken) {
-    this.sendAccumulator += 1000 / 60; // ~16.67ms per frame
+  update(chicken, dt) {
+    this.sendAccumulator += dt * 1000;
 
     if (this.sendAccumulator >= SEND_INTERVAL) {
       this.sendAccumulator = 0;

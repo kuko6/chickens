@@ -30,5 +30,5 @@ The game runs at `localhost:3000`.
 Requires [Deno](https://deno.com/).
 
 ```bash
-deno task start
+deno task dev
 ```

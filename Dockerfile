@@ -10,4 +10,4 @@ RUN deno task build
 
 EXPOSE 3000
 
-CMD ["deno", "task", "start:prod"]
+CMD ["deno", "task", "prod"]

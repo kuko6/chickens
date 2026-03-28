@@ -109,7 +109,7 @@ export class RunnerScene extends BaseScene {
     this.distance = Math.floor(this.chicken.x / 10);
 
     this.chicken.update(dt);
-    this.networkSync.update(this.chicken);
+    this.networkSync.update(this.chicken, dt);
 
     // snap alive remote chickens to local x
     for (const remote of this.getAliveRemotes()) {
