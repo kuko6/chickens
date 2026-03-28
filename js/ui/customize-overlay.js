@@ -49,28 +49,15 @@ export class CustomizeOverlay {
       z-index: 5;
     `;
 
-    this.gearButton = document.createElement("button");
-    this.gearButton.type = "button";
-    this.gearButton.title = "Customize character";
-    this.gearButton.textContent = "\u2699";
+    this.gearButton = document.createElement("div");
+    this.gearButton.innerHTML = `<img src="assets/gear.svg" width="18" height="18" alt="Customize" style="display:block;">`;
     this.gearButton.style.cssText = `
       position: absolute;
       top: ${ICON_MARGIN}px;
       right: ${ICON_MARGIN}px;
-      width: ${ICON_SIZE}px;
-      height: ${ICON_SIZE}px;
-      border: 2px solid #272744;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.85);
       color: #272744;
-      font-size: 18px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       cursor: pointer;
       pointer-events: auto;
-      padding: 0;
       user-select: none;
     `;
     this.gearButton.addEventListener("click", (e) => {
@@ -237,7 +224,7 @@ export class CustomizeOverlay {
   setOpen(open) {
     this.open = open;
     this.panel.style.display = open ? "block" : "none";
-    this.gearButton.style.background = open ? "rgba(100, 180, 255, 0.82)" : "rgba(255, 255, 255, 0.85)";
+    this.gearButton.style.opacity = open ? "0.5" : "1";
     if (open) this.nameInput.focus();
   }
 
