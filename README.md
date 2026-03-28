@@ -1,4 +1,4 @@
-# Chicken Game
+# ChickenRun
 
 A multiplayer chicken-themed runner game for up to 6 players to race and jump over obstacles. Built with Deno and vanilla JavaScript with HTML Canvas.
 
