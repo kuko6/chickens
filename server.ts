@@ -8,7 +8,7 @@
  */
 
 import { serveDir } from "@std/http/file-server";
-import { handleWebSocket } from "./ws.ts";
+import { handleWebSocket } from "./src/ws.ts";
 
 const fsRoot = Deno.args.includes("--prod") ? "dist" : ".";
 
