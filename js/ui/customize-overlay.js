@@ -85,7 +85,7 @@ export class CustomizeOverlay {
     const nameLabel = this.label("Name:");
     this.nameInput = document.createElement("input");
     this.nameInput.type = "text";
-    this.nameInput.maxLength = 16;
+    this.nameInput.maxLength = 20;
     this.nameInput.placeholder = "Name...";
     this.nameInput.style.cssText = `
       width: 100%;
@@ -118,17 +118,21 @@ export class CustomizeOverlay {
     `;
 
     // tint color swatches (each selects default sprite + that tint)
+    const defaultSet = SPRITE_SETS.find((s) => s.name === "default");
     for (let i = 0; i < TINT_COLORS.length; i++) {
       const swatch = document.createElement("button");
       swatch.type = "button";
       swatch.style.cssText = `
         border: 2px solid #9aa4b8;
-        border-radius: 999px;
-        width: 22px;
-        height: 22px;
-        padding: 0;
+        border-radius: 6px;
+        background: #f5f8ff;
+        padding: 2px;
         cursor: pointer;
-        background: ${this.solidColor(TINT_COLORS[i])};
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       `;
       swatch.addEventListener("click", () => {
         this.appearance.spriteSetName = "default";
@@ -136,6 +140,16 @@ export class CustomizeOverlay {
         this.syncStyleSelection();
         this.emitChange();
       });
+
+      const preview = document.createElement("canvas");
+      preview.width = 20;
+      preview.height = 20;
+      preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
+      if (defaultSet) {
+        this.drawTintedSpritePreview(preview, defaultSet, TINT_COLORS[i]);
+      }
+
+      swatch.appendChild(preview);
       styleRow.appendChild(swatch);
       this.styleButtons.push({ el: swatch, styleIndex: i });
     }
@@ -147,7 +161,7 @@ export class CustomizeOverlay {
       imroBtn.type = "button";
       imroBtn.style.cssText = `
         border: 2px solid #9aa4b8;
-        border-radius: 6px;
+        border-radius: 4px;
         background: #f5f8ff;
         padding: 2px;
         cursor: pointer;
@@ -217,6 +231,31 @@ export class CustomizeOverlay {
     ctx.drawImage(setData.spriteSheet, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
   }
 
+  /**
+   * @param {HTMLCanvasElement} canvas
+   * @param {{name: string, spriteWidth: number, spriteHeight: number}} set
+   * @param {string | null} tint
+   */
+  drawTintedSpritePreview(canvas, set, tint) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const setData = this.assets.spriteSets[set.name];
+    if (!setData?.spriteSheet) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(setData.spriteSheet, 0, 0, set.spriteWidth, set.spriteHeight, 0, 0, canvas.width, canvas.height);
+
+    if (tint) {
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.fillStyle = tint;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = "source-over";
+    }
+  }
+
+  /** Notify caller that appearance has changed. */
   emitChange() {
     this.onNetworkSync?.();
   }
@@ -237,10 +276,7 @@ export class CustomizeOverlay {
     }
   }
 
-  solidColor(tint) {
-    return tint ? tint.replace(/[\d.]+\)$/, "1)") : "#f5f5f5";
-  }
-
+  /** Remove overlay from DOM and clean up event listeners. */
   destroy() {
     document.removeEventListener("click", this.onDocumentClick);
     this.root.remove();
