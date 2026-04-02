@@ -68,7 +68,7 @@ export class IntroOverlay {
     titleRow.appendChild(title);
     titleRow.appendChild(icon);
 
-    const nameInput = this.makeInput("name", 16);
+    const nameInput = this.makeInput("name", 20);
     nameInput.style.textTransform = "none";
     nameInput.style.width = "234px";
     nameInput.style.marginBottom = "12px";
