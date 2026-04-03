@@ -1,13 +1,12 @@
 import { TINT_COLORS } from "../entities/tints.js";
 import { SPRITE_SETS } from "../engine/assets.js";
 
-const ICON_SIZE = 28;
+const ICON_SIZE = 18;
 const ICON_MARGIN = 10;
-const PANEL_WIDTH = 220;
+const PANEL_WIDTH = 230;
 
-// Index used to represent the imro option in the style selector.
-// Tint indices 0..TINT_COLORS.length-1 use the default sprite, this one uses imro.
-const IMRO_STYLE_INDEX = TINT_COLORS.length;
+// Non-default sprite sets get style indices starting after the tint colors.
+const EXTRA_SPRITE_SETS = SPRITE_SETS.filter((s) => s.name !== "default");
 
 export class CustomizeOverlay {
   /**
@@ -31,7 +30,8 @@ export class CustomizeOverlay {
 
   /** Returns the internal style index that represents the current spriteSet + colorIndex combo. */
   get activeStyleIndex() {
-    if (this.appearance.spriteSetName === "imro") return IMRO_STYLE_INDEX;
+    const extraIdx = EXTRA_SPRITE_SETS.findIndex((s) => s.name === this.appearance.spriteSetName);
+    if (extraIdx !== -1) return TINT_COLORS.length + extraIdx;
     return this.appearance.colorIndex;
   }
 
@@ -68,7 +68,7 @@ export class CustomizeOverlay {
     this.panel = document.createElement("div");
     this.panel.style.cssText = `
       position: absolute;
-      top: ${ICON_MARGIN + ICON_SIZE + 6}px;
+      top: ${2*ICON_MARGIN + ICON_SIZE}px;
       right: ${ICON_MARGIN}px;
       width: ${PANEL_WIDTH}px;
       border: 2px solid #272744;
@@ -154,12 +154,11 @@ export class CustomizeOverlay {
       this.styleButtons.push({ el: swatch, styleIndex: i });
     }
 
-    // imro option — shown as a small sprite preview
-    const imroSet = SPRITE_SETS.find((s) => s.name === "imro");
-    if (imroSet) {
-      const imroBtn = document.createElement("button");
-      imroBtn.type = "button";
-      imroBtn.style.cssText = `
+    // extra sprite set options (imro, variant2, variant3, …)
+    EXTRA_SPRITE_SETS.forEach((extraSet, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.style.cssText = `
         border: 2px solid #9aa4b8;
         border-radius: 4px;
         background: #f5f8ff;
@@ -171,8 +170,8 @@ export class CustomizeOverlay {
         align-items: center;
         justify-content: center;
       `;
-      imroBtn.addEventListener("click", () => {
-        this.appearance.spriteSetName = "imro";
+      btn.addEventListener("click", () => {
+        this.appearance.spriteSetName = extraSet.name;
         this.appearance.colorIndex = 0;
         this.syncStyleSelection();
         this.emitChange();
@@ -182,12 +181,12 @@ export class CustomizeOverlay {
       preview.width = 20;
       preview.height = 20;
       preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
-      this.drawSpritePreview(preview, imroSet);
+      this.drawSpritePreview(preview, extraSet);
 
-      imroBtn.appendChild(preview);
-      styleRow.appendChild(imroBtn);
-      this.styleButtons.push({ el: imroBtn, styleIndex: IMRO_STYLE_INDEX });
-    }
+      btn.appendChild(preview);
+      styleRow.appendChild(btn);
+      this.styleButtons.push({ el: btn, styleIndex: TINT_COLORS.length + idx });
+    });
 
     this.panel.appendChild(nameLabel);
     this.panel.appendChild(this.nameInput);
