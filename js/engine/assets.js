@@ -44,11 +44,40 @@ export const SPRITE_SETS = [
       cluck: { row: 4, frames: 4 },
     },
   },
+  {
+    name: "variant2",
+    label: "Variant2",
+    spriteWidth: 20,
+    spriteHeight: 20,
+    sound: "assets/sounds/chicken_cluck.mp3",
+    spriteSheet: "assets/sprites/chickens/variant2.png",
+    animations: {
+      idle: { row: 0, frames: 1 },
+      glide: { row: 1, frames: 2 },
+      jump: { row: 2, frames: 1 },
+      run: { row: 3, frames: 2 },
+      cluck: { row: 4, frames: 4 },
+    },
+  },
+  {
+    name: "variant3",
+    label: "Variant3",
+    spriteWidth: 20,
+    spriteHeight: 20,
+    sound: "assets/sounds/chicken_cluck.mp3",
+    spriteSheet: "assets/sprites/chickens/variant3.png",
+    animations: {
+      idle: { row: 0, frames: 1 },
+      glide: { row: 1, frames: 2 },
+      jump: { row: 2, frames: 1 },
+      run: { row: 3, frames: 2 },
+      cluck: { row: 4, frames: 4 },
+    },
+  },
 ];
 
-/**
- * Loads all game assets and returns them as a keyed object.
- * @returns {Promise<{spriteSets: Object, sprites: Object, sounds: Object}>}
+/** Loads all game assets and returns them as a keyed object.
+ * @returns {Promise<{spriteSets: Object, environment: Object}>}
  */
 export async function loadAssets() {
   const setEntries = await Promise.all(
@@ -81,8 +110,19 @@ export async function loadAssets() {
   const clouds = [];
   for (let i = 0; i < cloudCount; i++) {
     const c = document.createElement("canvas");
-    c.width = cloudW; c.height = cloudH;
-    c.getContext("2d").drawImage(cloudSheet, 0, i * cloudH, cloudW, cloudH, 0, 0, cloudW, cloudH);
+    c.width = cloudW;
+    c.height = cloudH;
+    c.getContext("2d").drawImage(
+      cloudSheet,
+      0,
+      i * cloudH,
+      cloudW,
+      cloudH,
+      0,
+      0,
+      cloudW,
+      cloudH,
+    );
     clouds.push(c);
   }
 
