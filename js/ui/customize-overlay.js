@@ -154,7 +154,7 @@ export class CustomizeOverlay {
       this.styleButtons.push({ el: swatch, styleIndex: i });
     }
 
-    // extra sprite set options (imro, variant2, variant3, …)
+    // extra sprite set options (imro, chicken2, chicken3, …)
     EXTRA_SPRITE_SETS.forEach((extraSet, idx) => {
       const btn = document.createElement("button");
       btn.type = "button";
