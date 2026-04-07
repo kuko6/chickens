@@ -19,8 +19,8 @@ export const SPRITE_SETS = [
     label: "Chicken",
     spriteWidth: 20,
     spriteHeight: 20,
-    sound: "assets/sounds/chicken_cluck.mp3",
-    spriteSheet: "assets/sprites/chickens/base.png",
+    sound: "assets/sounds/chicken.m4a",
+    spriteSheet: "assets/sprites/chickens/chicken.png",
     animations: {
       idle: { row: 0, frames: 1 },
       glide: { row: 1, frames: 2 },
@@ -34,7 +34,7 @@ export const SPRITE_SETS = [
     label: "Imro",
     spriteWidth: 20,
     spriteHeight: 20,
-    sound: "assets/sounds/rooster.mp3",
+    sound: "assets/sounds/rooster.m4a",
     spriteSheet: "assets/sprites/chickens/imro.png",
     animations: {
       idle: { row: 0, frames: 1 },
@@ -45,12 +45,12 @@ export const SPRITE_SETS = [
     },
   },
   {
-    name: "variant2",
-    label: "Variant2",
+    name: "chicken2",
+    label: "Chicken2",
     spriteWidth: 20,
     spriteHeight: 20,
-    sound: "assets/sounds/chicken_cluck.mp3",
-    spriteSheet: "assets/sprites/chickens/variant2.png",
+    sound: "assets/sounds/chicken.m4a",
+    spriteSheet: "assets/sprites/chickens/chicken2.png",
     animations: {
       idle: { row: 0, frames: 1 },
       glide: { row: 1, frames: 2 },
@@ -60,12 +60,12 @@ export const SPRITE_SETS = [
     },
   },
   {
-    name: "variant3",
-    label: "Variant3",
+    name: "chicken3",
+    label: "Chicken3",
     spriteWidth: 20,
     spriteHeight: 20,
-    sound: "assets/sounds/chicken_cluck.mp3",
-    spriteSheet: "assets/sprites/chickens/variant3.png",
+    sound: "assets/sounds/chicken.m4a",
+    spriteSheet: "assets/sprites/chickens/chicken3.png",
     animations: {
       idle: { row: 0, frames: 1 },
       glide: { row: 1, frames: 2 },
