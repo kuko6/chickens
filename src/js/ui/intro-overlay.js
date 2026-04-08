@@ -42,7 +42,7 @@ export class IntroOverlay {
       image-rendering: crisp-edges;
     `;
     const spriteImg = new Image();
-    spriteImg.src = "assets/sprites/chickens/base.png";
+    spriteImg.src = "assets/sprites/chickens/chicken.png";
     let frame = 0;
     const drawFrame = () => {
       const iconCtx = icon.getContext("2d");
