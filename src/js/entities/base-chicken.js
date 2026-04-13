@@ -28,6 +28,9 @@ export class BaseChicken {
     this.opacity = 1;
     this.name = "";
 
+    /** @type {{text: string, age: number, maxAge: number}[]} */
+    this.chatMessages = [];
+
     // depth bounds for parallax scaling
     this.minY = 210;
     this.maxY = 346;
@@ -48,6 +51,19 @@ export class BaseChicken {
   setColorIndex(colorIndex) {
     this.colorIndex = colorIndex;
     this.tint = TINT_COLORS[colorIndex % TINT_COLORS.length];
+  }
+
+  /** @param {string} text */
+  addChatMessage(text) {
+    this.chatMessages.push({ text, age: 0, maxAge: 4500 });
+    if (this.chatMessages.length > 5) this.chatMessages.shift();
+  }
+
+  /** @param {number} dt - elapsed time in seconds */
+  updateChat(dt) {
+    const ms = dt * 1000;
+    for (const msg of this.chatMessages) msg.age += ms;
+    this.chatMessages = this.chatMessages.filter((msg) => msg.age < msg.maxAge);
   }
 
   /** @param {{spriteSetName: string, colorIndex: number, name: string}} appearance */
@@ -119,5 +135,115 @@ export class BaseChicken {
       ctx.fillText(this.name, nameX, nameY);
       ctx.restore();
     }
+
+    // draw chat bubbles stacked above name/chicken
+    if (this.chatMessages.length > 0) {
+      this.#renderChatBubbles(ctx, this.x + drawWidth / 2, drawY);
+    }
+  }
+
+  /**
+   * Draw stacked speech bubbles above the chicken.
+   * Newest message at bottom, older ones stack upward.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} centerX
+   * @param {number} chickenTopY
+   */
+  #renderChatBubbles(ctx, centerX, chickenTopY) {
+    const PADDING_X = 7;
+    const PADDING_Y = 5;
+    const BUBBLE_GAP = 5;
+    const TAIL_H = 6;
+    const FONT = "10px DepartureMono";
+    const RADIUS = 5;
+    const FADE_MS = 600;
+    const POPIN_MS = 150;
+
+    ctx.save();
+    ctx.font = FONT;
+
+    // measure all bubbles first (newest = index 0 in reversed order)
+    const bubbles = [...this.chatMessages].reverse().map((msg) => {
+      const textW = ctx.measureText(msg.text).width;
+      const bw = textW + PADDING_X * 2;
+      const bh = 10 + PADDING_Y * 2; // line height ~10px
+      const popT = Math.min(msg.age / POPIN_MS, 1);
+      const scale = 0.5 + 0.5 * popT;
+      const fadeStart = msg.maxAge - FADE_MS;
+      const alpha = msg.age > fadeStart
+        ? 1 - (msg.age - fadeStart) / FADE_MS
+        : 1;
+      return { msg, bw, bh, scale, alpha };
+    });
+
+    // layout: stack from a base y upward
+    // base is above name tag (~24px above chickenTopY) + tail of lowest bubble
+    let baseY = chickenTopY - 14;
+
+    // compute total height to position stack
+    // start from bottom: newest bubble + tail, then older ones above
+    const positions = [];
+    let curY = baseY; // bottom of current slot (including tail for first)
+    for (let i = 0; i < bubbles.length; i++) {
+      const { bh } = bubbles[i];
+      const hasTail = i === 0;
+      const totalH = bh + (hasTail ? TAIL_H : 0);
+      const top = curY - totalH;
+      positions.push({ top, hasTail });
+      curY = top - BUBBLE_GAP;
+    }
+
+    for (let i = 0; i < bubbles.length; i++) {
+      const { bw, bh, scale, alpha } = bubbles[i];
+      const { top, hasTail } = positions[i];
+      const bubbleMidX = centerX;
+      const bubbleMidY = top + bh / 2;
+
+      ctx.save();
+      ctx.globalAlpha = alpha * this.opacity;
+      ctx.translate(bubbleMidX, bubbleMidY);
+      ctx.scale(scale, scale);
+      ctx.translate(-bubbleMidX, -bubbleMidY);
+
+      const left = centerX - bw / 2;
+      const right = centerX + bw / 2;
+      const bottom = top + bh;
+
+      // bubble body
+      ctx.beginPath();
+      ctx.moveTo(left + RADIUS, top);
+      ctx.lineTo(right - RADIUS, top);
+      ctx.arcTo(right, top, right, top + RADIUS, RADIUS);
+      ctx.lineTo(right, bottom - RADIUS);
+      ctx.arcTo(right, bottom, right - RADIUS, bottom, RADIUS);
+      ctx.lineTo(left + RADIUS, bottom);
+      ctx.arcTo(left, bottom, left, bottom - RADIUS, RADIUS);
+      ctx.lineTo(left, top + RADIUS);
+      ctx.arcTo(left, top, left + RADIUS, top, RADIUS);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
+      ctx.fill();
+
+      // tail triangle on lowest bubble
+      if (hasTail) {
+        ctx.beginPath();
+        ctx.moveTo(centerX - 5, bottom);
+        ctx.lineTo(centerX + 5, bottom);
+        ctx.lineTo(centerX, bottom + TAIL_H);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // text
+      ctx.fillStyle = "#272744";
+      ctx.font = FONT;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(bubbles[i].msg.text, centerX, bubbleMidY);
+
+      ctx.restore();
+    }
+
+    ctx.restore();
   }
 }

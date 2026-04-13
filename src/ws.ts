@@ -139,6 +139,12 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
       return;
     }
 
+    if (data.type === "chat") {
+      const text = String(data.text ?? "").trim().slice(0, 100);
+      if (text) broadcast(lobby, JSON.stringify({ type: "chat", id, text }));
+      return;
+    }
+
     broadcast(lobby, JSON.stringify(data), id);
   };
 

@@ -87,6 +87,7 @@ export class LobbyScene extends BaseScene {
     };
 
     this.initGround();
+    this.initChat();
 
     // listen for Enter to toggle ready / start in single player
     this.onKeyDown = (e) => {
@@ -118,6 +119,7 @@ export class LobbyScene extends BaseScene {
     this.cloudLayer.update();
     this.chicken.update(dt);
     this.networkSync.update(this.chicken, dt);
+    this.updateChat([this.chicken, ...this.networkSync.getRemoteChickens()], dt);
 
     // clamp chicken to lobby area
     const maxX = this.canvasW - this.chicken.width;

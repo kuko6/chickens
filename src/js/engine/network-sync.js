@@ -16,6 +16,16 @@ export class NetworkSync {
 
     this.lastSentState = null;
     this.sendAccumulator = 0;
+    /** @type {import('../entities/chicken.js').Chicken|null} */
+    this.localChicken = null;
+
+    this.network.onChat = (id, text) => {
+      if (id === this.network.id) {
+        this.localChicken?.addChatMessage(text);
+      } else {
+        this.remoteChickens.get(id)?.addChatMessage(text);
+      }
+    };
 
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {
       const remote = new RemoteChicken(this.assets, colorIndex, spriteSet, name);
@@ -47,6 +57,7 @@ export class NetworkSync {
    * @param {{spriteSetName: string, colorIndex: number, name: string}} [appearance]
    */
   attach(chicken, appearance) {
+    this.localChicken = chicken;
     this.chickenMinY = chicken.minY;
     this.chickenMaxY = chicken.maxY;
 

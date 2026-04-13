@@ -14,6 +14,7 @@ export class NetworkManager {
     this.onDisconnect = null;
     this.onReady = null;
     this.onStart = null;
+    this.onChat = null;
   }
 
   /**
@@ -71,6 +72,9 @@ export class NetworkManager {
           break;
         case "start":
           this.onStart?.(data.roundSeed);
+          break;
+        case "chat":
+          this.onChat?.(data.id, data.text);
           break;
       }
     };
@@ -135,6 +139,15 @@ export class NetworkManager {
    * @param {number} colorIndex
    * @param {string} name
    */
+  /**
+   * Send a chat message to all players in the lobby.
+   * @param {string} text
+   */
+  sendChat(text) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ type: "chat", text }));
+  }
+
   sendCustomize(spriteSet, colorIndex, name) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
