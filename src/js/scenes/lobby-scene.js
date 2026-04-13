@@ -35,6 +35,7 @@ export class LobbyScene extends BaseScene {
       this.canvas,
       this.assets,
       appearance,
+      this.lobbyId,
       () => {
         this.chicken.applyAppearance(appearance);
         this.network.sendCustomize(appearance.spriteSetName, appearance.colorIndex, appearance.name);

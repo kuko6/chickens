@@ -43,6 +43,30 @@ export class IntroOverlay {
     `;
     const spriteImg = new Image();
     spriteImg.src = "assets/sprites/chickens/chicken.png";
+
+    const imroEdition = document.createElement("div");
+    imroEdition.textContent = "imro edition";
+    imroEdition.style.cssText = `
+      font-size: 13px;
+      color: #272744;
+      opacity: 0;
+      margin-top: -36px;
+      margin-bottom: 24px;
+      transition: opacity 0.3s;
+    `;
+
+    let currentSpriteSrc = spriteImg.src;
+    const updateSprite = () => {
+      const code = lobbyInput.value.trim().toLowerCase();
+      const isImro = code === "imro";
+      const nextSrc = isImro ? "assets/sprites/chickens/imro.png" : "assets/sprites/chickens/chicken.png";
+      if (currentSpriteSrc !== nextSrc) {
+        currentSpriteSrc = nextSrc;
+        spriteImg.src = nextSrc;
+      }
+      imroEdition.style.opacity = isImro ? "1" : "0";
+    };
+
     let frame = 0;
     const drawFrame = () => {
       const iconCtx = icon.getContext("2d");
@@ -84,7 +108,8 @@ export class IntroOverlay {
     lobbyInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") joinBtn.click();
     });
-    if (initialLobbyCode) lobbyInput.value = initialLobbyCode;
+    lobbyInput.addEventListener("input", updateSprite);
+    if (initialLobbyCode) { lobbyInput.value = initialLobbyCode; updateSprite(); }
     row.appendChild(lobbyInput);
     row.appendChild(joinBtn);
 
@@ -96,6 +121,7 @@ export class IntroOverlay {
       align-items: center;
     `;
     card.appendChild(titleRow);
+    card.appendChild(imroEdition);
     card.appendChild(nameInput);
     card.appendChild(row);
 

@@ -5,20 +5,22 @@ const ICON_SIZE = 18;
 const ICON_MARGIN = 10;
 const PANEL_WIDTH = 230;
 
-// Non-default sprite sets get style indices starting after the tint colors.
-const EXTRA_SPRITE_SETS = SPRITE_SETS.filter((s) => s.name !== "default");
+const DEFAULT_SPRITE_SETS = SPRITE_SETS;
+const IMRO_SPRITE_SETS = SPRITE_SETS.filter((s) => s.name === "imro");
 
 export class CustomizeOverlay {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {Object} assets
    * @param {{spriteSetName: string, colorIndex: number, name: string}} appearance
+   * @param {string} lobbyId
    * @param {function(): void} onNetworkSync - called after appearance changes so the caller can broadcast
    */
-  constructor(canvas, assets, appearance, onNetworkSync) {
+  constructor(canvas, assets, appearance, lobbyId, onNetworkSync) {
     this.canvas = canvas;
     this.assets = assets;
     this.appearance = appearance;
+    this.isImroLobby = lobbyId === "imro";
     this.onNetworkSync = onNetworkSync;
 
     this.open = false;
@@ -30,8 +32,11 @@ export class CustomizeOverlay {
 
   /** Returns the internal style index that represents the current spriteSet + colorIndex combo. */
   get activeStyleIndex() {
-    const extraIdx = EXTRA_SPRITE_SETS.findIndex((s) => s.name === this.appearance.spriteSetName);
-    if (extraIdx !== -1) return TINT_COLORS.length + extraIdx;
+    if (!this.isImroLobby) {
+      const extraSets = DEFAULT_SPRITE_SETS.filter((s) => s.name !== "default");
+      const extraIdx = extraSets.findIndex((s) => s.name === this.appearance.spriteSetName);
+      if (extraIdx !== -1) return TINT_COLORS.length + extraIdx;
+    }
     return this.appearance.colorIndex;
   }
 
@@ -117,8 +122,10 @@ export class CustomizeOverlay {
       align-items: center;
     `;
 
-    // tint color swatches (each selects default sprite + that tint)
-    const defaultSet = SPRITE_SETS.find((s) => s.name === "default");
+    // tint color swatches — use imro sprite in imro lobby, default sprite otherwise
+    const availableSets = this.isImroLobby ? IMRO_SPRITE_SETS : DEFAULT_SPRITE_SETS;
+    const tintBaseSet = availableSets.find((s) => s.name === (this.isImroLobby ? "imro" : "default"));
+    const tintBaseSetName = tintBaseSet?.name ?? "default";
     for (let i = 0; i < TINT_COLORS.length; i++) {
       const swatch = document.createElement("button");
       swatch.type = "button";
@@ -135,7 +142,7 @@ export class CustomizeOverlay {
         justify-content: center;
       `;
       swatch.addEventListener("click", () => {
-        this.appearance.spriteSetName = "default";
+        this.appearance.spriteSetName = tintBaseSetName;
         this.appearance.colorIndex = i;
         this.syncStyleSelection();
         this.emitChange();
@@ -145,8 +152,8 @@ export class CustomizeOverlay {
       preview.width = 20;
       preview.height = 20;
       preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
-      if (defaultSet) {
-        this.drawTintedSpritePreview(preview, defaultSet, TINT_COLORS[i]);
+      if (tintBaseSet) {
+        this.drawTintedSpritePreview(preview, tintBaseSet, TINT_COLORS[i]);
       }
 
       swatch.appendChild(preview);
@@ -154,39 +161,41 @@ export class CustomizeOverlay {
       this.styleButtons.push({ el: swatch, styleIndex: i });
     }
 
-    // extra sprite set options (imro, chicken2, chicken3, …)
-    EXTRA_SPRITE_SETS.forEach((extraSet, idx) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.style.cssText = `
-        border: 2px solid #9aa4b8;
-        border-radius: 4px;
-        background: #f5f8ff;
-        padding: 2px;
-        cursor: pointer;
-        width: 26px;
-        height: 26px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      btn.addEventListener("click", () => {
-        this.appearance.spriteSetName = extraSet.name;
-        this.appearance.colorIndex = 0;
-        this.syncStyleSelection();
-        this.emitChange();
+    // extra sprite set options — non-tinted variants (hidden in imro lobby)
+    if (!this.isImroLobby) {
+      availableSets.filter((s) => s.name !== "default").forEach((extraSet, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.style.cssText = `
+          border: 2px solid #9aa4b8;
+          border-radius: 4px;
+          background: #f5f8ff;
+          padding: 2px;
+          cursor: pointer;
+          width: 26px;
+          height: 26px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        btn.addEventListener("click", () => {
+          this.appearance.spriteSetName = extraSet.name;
+          this.appearance.colorIndex = 0;
+          this.syncStyleSelection();
+          this.emitChange();
+        });
+
+        const preview = document.createElement("canvas");
+        preview.width = 20;
+        preview.height = 20;
+        preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
+        this.drawSpritePreview(preview, extraSet);
+
+        btn.appendChild(preview);
+        styleRow.appendChild(btn);
+        this.styleButtons.push({ el: btn, styleIndex: TINT_COLORS.length + idx });
       });
-
-      const preview = document.createElement("canvas");
-      preview.width = 20;
-      preview.height = 20;
-      preview.style.cssText = "image-rendering: pixelated; image-rendering: crisp-edges;";
-      this.drawSpritePreview(preview, extraSet);
-
-      btn.appendChild(preview);
-      styleRow.appendChild(btn);
-      this.styleButtons.push({ el: btn, styleIndex: TINT_COLORS.length + idx });
-    });
+    }
 
     this.panel.appendChild(nameLabel);
     this.panel.appendChild(this.nameInput);
