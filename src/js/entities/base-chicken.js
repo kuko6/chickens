@@ -112,14 +112,15 @@ export class BaseChicken {
       }
     }
 
-    // draw name above chicken
-    if (this.name) {
+    // draw name above chicken (hidden for now)
+    // NOTE: decide what to do with this
+    if (false && this.name) {
       ctx.save();
       ctx.font = "bold 11px DepartureMono";
       ctx.textAlign = "center";
 
       const nameX = this.x + drawWidth / 2;
-      const nameY = drawY - 6;
+      const nameY = drawY - 2;
       const textWidth = ctx.measureText(this.name).width;
       const padding = 3;
 
@@ -138,7 +139,8 @@ export class BaseChicken {
 
     // draw chat bubbles stacked above name/chicken
     if (this.chatMessages.length > 0) {
-      this.#renderChatBubbles(ctx, this.x + drawWidth / 2, drawY);
+      // this.#renderChatBubbles(ctx, this.x + drawWidth / 2, drawY);
+      this.#renderChatBubbles(ctx, this.facingRight ? this.x + drawWidth : this.x, drawY);
     }
   }
 
@@ -152,7 +154,7 @@ export class BaseChicken {
   #renderChatBubbles(ctx, centerX, chickenTopY) {
     const PADDING_X = 7;
     const PADDING_Y = 5;
-    const BUBBLE_GAP = 5;
+    const BUBBLE_GAP = 2;
     const TAIL_H = 6;
     const FONT = "10px DepartureMono";
     const RADIUS = 5;
@@ -177,11 +179,9 @@ export class BaseChicken {
     });
 
     // layout: stack from a base y upward
-    // base is above name tag (~24px above chickenTopY) + tail of lowest bubble
-    let baseY = chickenTopY - 14;
-
     // compute total height to position stack
     // start from bottom: newest bubble + tail, then older ones above
+    const baseY = chickenTopY - 4;
     const positions = [];
     let curY = baseY; // bottom of current slot (including tail for first)
     for (let i = 0; i < bubbles.length; i++) {
