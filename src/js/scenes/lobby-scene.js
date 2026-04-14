@@ -175,7 +175,8 @@ export class LobbyScene extends BaseScene {
     const localScore = this.networkSync.scores.get(localId) || { total: 0, lastRun: 0 };
     const app = this.context.appearance;
     entries.push({
-      name: app.name || `player ${localId}`,
+      name: "you",
+      isLocal: true,
       spriteSetName: app.spriteSetName,
       colorIndex: app.colorIndex,
       ...localScore,
@@ -185,6 +186,7 @@ export class LobbyScene extends BaseScene {
       const score = this.networkSync.scores.get(id) || { total: 0, lastRun: 0 };
       entries.push({
         name: info.name || `player ${id}`,
+        isLocal: false,
         spriteSetName: info.spriteSet || "default",
         colorIndex: info.colorIndex ?? 0,
         ...score,
@@ -194,9 +196,7 @@ export class LobbyScene extends BaseScene {
     entries.sort((a, b) => b.total - a.total);
 
     ctx.save();
-    ctx.font = "10px DepartureMono";
     ctx.textAlign = "left";
-    ctx.fillStyle = "#595e66";
 
     const ICON_SIZE = 20;
     let y = 64;
@@ -208,6 +208,10 @@ export class LobbyScene extends BaseScene {
         const tint = TINT_COLORS[entry.colorIndex % TINT_COLORS.length];
         drawTintedSprite(ctx, set.spriteSheet, 0, anim.row * set.spriteHeight, set.spriteWidth, set.spriteHeight, 8, y - ICON_SIZE + 6, ICON_SIZE, ICON_SIZE, true, tint, 1);
       }
+
+      // NOTE: this font doesnt support bold text, but I would keep it as a future reference
+      ctx.font = entry.isLocal ? "bold 10px DepartureMono" : "10px DepartureMono";
+      ctx.fillStyle = "#595e66";
 
       const label = entry.total > 0
         ? `${entry.name}: ${entry.total} (${entry.lastRun})`
