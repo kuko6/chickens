@@ -135,6 +135,12 @@ export class RunnerScene extends BaseScene {
       if (obstacle.collides(this.chicken)) {
         this.gameOver = true;
         this.network.sendDead();
+
+        // update and broadcast score
+        const prev = this.networkSync.scores.get(this.network.id) || { total: 0, lastRun: 0 };
+        const score = { total: prev.total + this.distance, lastRun: this.distance };
+        this.networkSync.scores.set(this.network.id, score);
+        this.network.sendScore(score.total, score.lastRun);
         return;
       }
     }

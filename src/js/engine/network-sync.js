@@ -19,6 +19,13 @@ export class NetworkSync {
     /** @type {import('../entities/chicken.js').Chicken|null} */
     this.localChicken = null;
 
+    /** @type {Map<string, {total: number, lastRun: number}>} */
+    this.scores = new Map();
+
+    this.network.onScore = (id, total, lastRun) => {
+      this.scores.set(id, { total, lastRun });
+    };
+
     this.network.onChat = (id, text) => {
       if (id === this.network.id) {
         this.localChicken?.addChatMessage(text);
@@ -36,6 +43,7 @@ export class NetworkSync {
 
     this.network.onLeave = (id) => {
       this.remoteChickens.delete(id);
+      this.scores.delete(id);
     };
 
     this.network.onCustomize = (id, spriteSet, colorIndex, name) => {
@@ -48,6 +56,7 @@ export class NetworkSync {
 
     this.network.onDisconnect = () => {
       this.remoteChickens.clear();
+      this.scores.clear();
     };
   }
 

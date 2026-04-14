@@ -15,6 +15,7 @@ export class NetworkManager {
     this.onReady = null;
     this.onStart = null;
     this.onChat = null;
+    this.onScore = null;
   }
 
   /**
@@ -75,6 +76,9 @@ export class NetworkManager {
           break;
         case "chat":
           this.onChat?.(data.id, data.text);
+          break;
+        case "score":
+          this.onScore?.(data.id, data.total, data.lastRun);
           break;
       }
     };
@@ -146,6 +150,16 @@ export class NetworkManager {
   sendChat(text) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({ type: "chat", text }));
+  }
+
+  /**
+   * Broadcast score to other players in the lobby.
+   * @param {number} total
+   * @param {number} lastRun
+   */
+  sendScore(total, lastRun) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ type: "score", total, lastRun }));
   }
 
   sendCustomize(spriteSet, colorIndex, name) {
