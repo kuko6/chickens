@@ -15,7 +15,7 @@ export class ChatOverlay {
 
     this.input = document.createElement("input");
     this.input.type = "text";
-    this.input.maxLength = 100;
+    this.input.maxLength = 50;
     this.input.placeholder = "say something...";
     this.input.style.cssText = `
       display: none;

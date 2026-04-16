@@ -181,7 +181,7 @@ export class BaseChicken {
     // layout: stack from a base y upward
     // compute total height to position stack
     // start from bottom: newest bubble + tail, then older ones above
-    const baseY = chickenTopY - 4;
+    const baseY = chickenTopY + 6;
     const positions = [];
     let curY = baseY; // bottom of current slot (including tail for first)
     for (let i = 0; i < bubbles.length; i++) {
