@@ -4,9 +4,10 @@ A multiplayer chicken-themed runner game for up to 6 players to race and jump ov
 
 ## Controls
 
-- **Arrow keys** — move
-- **Space** — jump / glide
-- **V** — cluck
+- **Arrow keys** - move
+- **Space** - jump / glide
+- **V** - cluck
+- **T** - chat
 
 ## Self-hosting
 

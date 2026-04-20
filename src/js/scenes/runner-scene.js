@@ -53,6 +53,7 @@ export class RunnerScene extends BaseScene {
     this.networkSync.attach(this.chicken, this.context.appearance);
 
     this.initGround();
+    this.initChat();
 
     // start spawning well ahead of the chicken
     this.nextSpawnX = this.chicken.x + this.canvasW;
@@ -86,6 +87,7 @@ export class RunnerScene extends BaseScene {
 
     if (this.gameOver) {
       this.networkSync.receive();
+      this.updateChat([this.chicken, ...this.networkSync.getRemoteChickens()], dt);
       const alive = this.getAliveRemotes();
       if (alive.length > 0) {
         const target = alive[0];
@@ -110,6 +112,7 @@ export class RunnerScene extends BaseScene {
 
     this.chicken.update(dt);
     this.networkSync.update(this.chicken, dt);
+    this.updateChat([this.chicken, ...this.networkSync.getRemoteChickens()], dt);
 
     // snap alive remote chickens to local x
     for (const remote of this.getAliveRemotes()) {
@@ -132,6 +135,12 @@ export class RunnerScene extends BaseScene {
       if (obstacle.collides(this.chicken)) {
         this.gameOver = true;
         this.network.sendDead();
+
+        // update and broadcast score
+        const prev = this.networkSync.scores.get(this.network.id) || { total: 0, lastRun: 0 };
+        const score = { total: prev.total + this.distance, lastRun: this.distance };
+        this.networkSync.scores.set(this.network.id, score);
+        this.network.sendScore(score.total, score.lastRun);
         return;
       }
     }

@@ -1,7 +1,7 @@
 import { TINT_COLORS } from "../entities/tints.js";
 import { SPRITE_SETS } from "../engine/assets.js";
 
-const ICON_SIZE = 18;
+const ICON_SIZE = 20;
 const ICON_MARGIN = 10;
 const PANEL_WIDTH = 230;
 

@@ -1,3 +1,5 @@
+import { ChatOverlay } from "../ui/chat-overlay.js";
+
 export class BaseScene {
   /**
    * @param {{ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, viewport: {width: number, height: number}, assets: Object, input: import('../engine/input.js').InputManager, network: import('../engine/network.js').NetworkManager, networkSync: import('../engine/network-sync.js').NetworkSync, switchScene: Function, cloudLayer: import('./cloud-layer.js').CloudLayer, rng: import('../engine/seeded-random.js').SeededRandom, horizonY: number, appearance: Object}} context
@@ -21,6 +23,42 @@ export class BaseScene {
     this.chicken = null;
     this.cameraX = 0;
     this.onKeyDown = null;
+    this.chatOverlay = null;
+    this.onChatKey = null;
+  }
+
+  /** Set up chat input overlay and T-key listener. */
+  initChat() {
+    this.chatOverlay = new ChatOverlay(this.canvas, (text) => {
+      this.network.sendChat(text);
+    });
+
+    this.onChatKey = (e) => {
+      if (e.code === "KeyT" && !this.chatOverlay.isOpen) {
+        e.preventDefault();
+        this.chatOverlay.open();
+      }
+    };
+    window.addEventListener("keydown", this.onChatKey);
+  }
+
+  /**
+   * Advance chat bubble timers for all chickens.
+   * @param {import('../entities/base-chicken.js').BaseChicken[]} chickens
+   * @param {number} dt - elapsed time in seconds
+   */
+  updateChat(chickens, dt) {
+    for (const c of chickens) c.updateChat(dt);
+  }
+
+  /** Tear down chat overlay and listener. */
+  exitChat() {
+    if (this.onChatKey) {
+      window.removeEventListener("keydown", this.onChatKey);
+      this.onChatKey = null;
+    }
+    this.chatOverlay?.destroy();
+    this.chatOverlay = null;
   }
 
   /** Precompute ground tile sizes and counts from the environment tilesets. */
@@ -104,6 +142,7 @@ export class BaseScene {
       window.removeEventListener("keydown", this.onKeyDown);
       this.onKeyDown = null;
     }
+    this.exitChat();
     this.chicken = null;
   }
 }

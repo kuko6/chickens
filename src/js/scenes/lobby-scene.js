@@ -2,6 +2,7 @@ import { Chicken } from "../entities/chicken.js";
 import { CustomizeOverlay } from "../ui/customize-overlay.js";
 import { RunnerScene } from "./runner-scene.js";
 import { BaseScene } from "./base-scene.js";
+import { TINT_COLORS, drawTintedSprite } from "../entities/tints.js";
 
 export class LobbyScene extends BaseScene {
   constructor(context) {
@@ -87,6 +88,7 @@ export class LobbyScene extends BaseScene {
     };
 
     this.initGround();
+    this.initChat();
 
     // listen for Enter to toggle ready / start in single player
     this.onKeyDown = (e) => {
@@ -118,6 +120,7 @@ export class LobbyScene extends BaseScene {
     this.cloudLayer.update();
     this.chicken.update(dt);
     this.networkSync.update(this.chicken, dt);
+    this.updateChat([this.chicken, ...this.networkSync.getRemoteChickens()], dt);
 
     // clamp chicken to lobby area
     const maxX = this.canvasW - this.chicken.width;
@@ -143,6 +146,9 @@ export class LobbyScene extends BaseScene {
     ctx.fillText("lobby: " + this.lobbyId, 8, 28);
     ctx.restore();
 
+    // draw scoreboard
+    this.renderScoreboard(ctx);
+
     // draw ready hint
     ctx.save();
     const remoteCount = this.networkSync.getRemoteChickens().length;
@@ -158,6 +164,62 @@ export class LobbyScene extends BaseScene {
       ? "rgba(80, 200, 80, 1)"
       : "#595e66";
     ctx.fillText(hintText, this.canvasW / 2, 16);
+    ctx.restore();
+  }
+
+  /** Render player scores below the lobby code. */
+  renderScoreboard(ctx) {
+    const entries = [];
+
+    const localId = this.network.id;
+    const localScore = this.networkSync.scores.get(localId) || { total: 0, lastRun: 0 };
+    const app = this.context.appearance;
+    entries.push({
+      name: "you",
+      isLocal: true,
+      spriteSetName: app.spriteSetName,
+      colorIndex: app.colorIndex,
+      ...localScore,
+    });
+
+    for (const [id, info] of this.network.remotePlayerInfo) {
+      const score = this.networkSync.scores.get(id) || { total: 0, lastRun: 0 };
+      entries.push({
+        name: info.name || `player ${id}`,
+        isLocal: false,
+        spriteSetName: info.spriteSet || "default",
+        colorIndex: info.colorIndex ?? 0,
+        ...score,
+      });
+    }
+
+    entries.sort((a, b) => b.total - a.total);
+
+    ctx.save();
+    ctx.textAlign = "left";
+
+    const ICON_SIZE = 20;
+    let y = 64;
+    for (const entry of entries) {
+      // draw mini chicken sprite (idle frame 0)
+      const set = this.assets.spriteSets[entry.spriteSetName];
+      if (set) {
+        const anim = set.animations.idle;
+        const tint = TINT_COLORS[entry.colorIndex % TINT_COLORS.length];
+        drawTintedSprite(ctx, set.spriteSheet, 0, anim.row * set.spriteHeight, set.spriteWidth, set.spriteHeight, 8, y - ICON_SIZE + 6, ICON_SIZE, ICON_SIZE, true, tint, 1);
+      }
+
+      // NOTE: this font doesnt support bold text, but I would keep it as a future reference
+      ctx.font = entry.isLocal ? "bold 10px DepartureMono" : "10px DepartureMono";
+      ctx.fillStyle = "#595e66";
+
+      const label = entry.total > 0
+        ? `${entry.name}: ${entry.total} (${entry.lastRun})`
+        : `${entry.name}: 0`;
+      ctx.fillText(label, 8 + ICON_SIZE + 4, y);
+      y += 18;
+    }
+
     ctx.restore();
   }
 
