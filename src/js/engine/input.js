@@ -9,6 +9,7 @@ const KEY_MAP = {
   KeyS: "down",
   Space: "jump",
   KeyV: "cluck",
+  KeyX: "peck",
 };
 
 export class InputManager {

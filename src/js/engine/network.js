@@ -16,6 +16,7 @@ export class NetworkManager {
     this.onStart = null;
     this.onChat = null;
     this.onScore = null;
+    this.onPeck = null;
   }
 
   /**
@@ -79,6 +80,9 @@ export class NetworkManager {
           break;
         case "score":
           this.onScore?.(data.id, data.total, data.lastRun);
+          break;
+        case "peck":
+          this.onPeck?.(data.id, data.x, data.y, data.facingRight);
           break;
       }
     };
@@ -160,6 +164,17 @@ export class NetworkManager {
   sendScore(total, lastRun) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({ type: "score", total, lastRun }));
+  }
+
+  /**
+   * Broadcast a peck attack from the local chicken.
+   * @param {number} x
+   * @param {number} y
+   * @param {boolean} facingRight
+   */
+  sendPeck(x, y, facingRight) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ type: "peck", x, y, facingRight }));
   }
 
   sendCustomize(spriteSet, colorIndex, name) {

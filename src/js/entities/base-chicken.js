@@ -20,6 +20,9 @@ export class BaseChicken {
     this.isJumping = false;
     this.isGliding = false;
     this.isClucking = false;
+    this.isPecking = false;
+    this.peckTimer = 0;
+    this.knockbackVX = 0;
 
     this.currentFrame = 0;
     this.cluckFrame = 0;
@@ -96,6 +99,18 @@ export class BaseChicken {
     const drawY = this.y + this.airY;
 
     drawTintedSprite(ctx, set.spriteSheet, frameX, frameY, this.spriteWidth, this.spriteHeight, this.x, drawY, drawWidth, drawHeight, this.facingRight, this.tint, this.opacity);
+
+    // peck indicator — small jab in the facing direction
+    if (this.isPecking) {
+      const reach = 18;
+      const beakY = drawY + drawHeight * 0.45;
+      const beakX = this.facingRight ? this.x + drawWidth : this.x - reach;
+      ctx.save();
+      ctx.globalAlpha = this.opacity;
+      ctx.fillStyle = "#ffcf3f";
+      ctx.fillRect(beakX, beakY, reach, 4);
+      ctx.restore();
+    }
 
     // cluck bubble — decorative only, excluded from collision
     if (this.isClucking) {

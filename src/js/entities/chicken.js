@@ -49,6 +49,11 @@ export class Chicken extends BaseChicken {
 
     // when true, chicken always faces right and plays run animation
     this.autoRun = false;
+
+    // peck
+    this.peckCooldown = 0;
+    this.peckDuration = 8;
+    this.peckTriggered = false;
   }
 
   /**
@@ -138,8 +143,27 @@ export class Chicken extends BaseChicken {
       }
     }
 
+    // peck
+    if (this.peckCooldown > 0) this.peckCooldown--;
+    if (this.input.isDown("peck") && this.peckCooldown === 0 && !this.isJumping) {
+      this.isPecking = true;
+      this.peckTimer = this.peckDuration;
+      this.peckCooldown = 25;
+      this.peckTriggered = true;
+    }
+    if (this.isPecking) {
+      this.peckTimer--;
+      if (this.peckTimer <= 0) this.isPecking = false;
+    }
+
+    // knockback decay
+    if (this.knockbackVX !== 0) {
+      this.knockbackVX *= 0.85;
+      if (Math.abs(this.knockbackVX) < 0.1) this.knockbackVX = 0;
+    }
+
     // move and clamp
-    this.x += this.velocityX;
+    this.x += this.velocityX + this.knockbackVX;
 
     if (this.isJumping) {
       this.airY += this.velocityY;

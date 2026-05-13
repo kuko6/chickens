@@ -73,6 +73,18 @@ export class LobbyScene extends BaseScene {
       this.startRunnerScene(roundSeed);
     };
 
+    this.network.onPeck = (id, x, y, facingRight) => {
+      const remote = this.networkSync.remoteChickens.get(id);
+      if (remote) {
+        remote.isPecking = true;
+        remote.peckTimer = 8;
+      }
+      // victim check: did this peck hit our local chicken?
+      if (this.chickenHit(x, y, facingRight, this.chicken)) {
+        this.chicken.knockbackVX = facingRight ? 9 : -9;
+      }
+    };
+
     this.origOnJoin = this.network.onJoin;
     this.network.onJoin = (id, colorIndex, spriteSet, name) => {
       this.origOnJoin?.(id, colorIndex, spriteSet, name);
@@ -105,6 +117,22 @@ export class LobbyScene extends BaseScene {
     window.addEventListener("keydown", this.onKeyDown);
   }
 
+  /** Returns true if a peck from (attackerX, attackerY) facing the given direction overlaps the victim. */
+  chickenHit(attackerX, attackerY, facingRight, victim) {
+    const reach = 18;
+    const attackerW = 60;
+    const hitX = facingRight ? attackerX + attackerW : attackerX - reach;
+    const hitY = attackerY + 10;
+    const hitW = reach;
+    const hitH = 40;
+    return (
+      hitX < victim.x + victim.width &&
+      hitX + hitW > victim.x &&
+      hitY < victim.y + victim.height &&
+      hitY + hitH > victim.y
+    );
+  }
+
   /** @param {number} roundSeed */
   startRunnerScene(roundSeed) {
     const runner = new RunnerScene(this.context);
@@ -119,6 +147,12 @@ export class LobbyScene extends BaseScene {
   update(dt) {
     this.cloudLayer.update();
     this.chicken.update(dt);
+
+    if (this.chicken.peckTriggered) {
+      this.chicken.peckTriggered = false;
+      this.network.sendPeck(this.chicken.x, this.chicken.y, this.chicken.facingRight);
+    }
+
     this.networkSync.update(this.chicken, dt);
     this.updateChat([this.chicken, ...this.networkSync.getRemoteChickens()], dt);
 
@@ -248,6 +282,7 @@ export class LobbyScene extends BaseScene {
   exit() {
     this.network.onReady = null;
     this.network.onStart = null;
+    this.network.onPeck = null;
     this.network.onId = this.origOnId;
     this.network.onJoin = this.origOnJoin;
     this.network.onLeave = this.origOnLeave;

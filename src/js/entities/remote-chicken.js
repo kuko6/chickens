@@ -77,5 +77,10 @@ export class RemoteChicken extends BaseChicken {
     this.x = lerp(this.x, this.targetX, LERP_SPEED);
     this.y = lerp(this.y, this.targetY, LERP_SPEED);
     this.airY = lerp(this.airY, this.targetAirY, LERP_SPEED);
+
+    if (this.isPecking) {
+      this.peckTimer--;
+      if (this.peckTimer <= 0) this.isPecking = false;
+    }
   }
 }
