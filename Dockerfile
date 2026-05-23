@@ -1,9 +1,9 @@
-FROM denoland/deno:2.7.7
+FROM denoland/deno:2.8.0
 
 WORKDIR /app
 
 COPY deno.json deno.lock* ./
-RUN deno install
+RUN deno ci
 
 COPY . .
 RUN deno task build
