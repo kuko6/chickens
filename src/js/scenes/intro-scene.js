@@ -11,15 +11,25 @@ import { CloudLayer } from "./cloud-layer.js";
  * @param {string} lobbyCode - Lobby code
  */
 export function applyEasterEggs(appearance, name, lobbyCode) {
-  const lower = name.toLowerCase();
+  const lower = name.toLowerCase().normalize("NFD").replace(
+    /[\u0300-\u036f]/g,
+    "",
+  );
+
+  function flexMatch(variants) {
+    return variants.some((v) => {
+      const pattern = v.replace(/[aeiou]/gi, "$&+");
+      return new RegExp(pattern, "i").test(lower);
+    });
+  }
 
   if (lobbyCode === "imro") appearance.spriteSetName = "imro";
 
-  if (lower.includes("kami") || lower.includes("imro") || lower.includes("matus")) {
+  if (flexMatch(["kami", "imro", "matus"])) {
     appearance.spriteSetName = "imro";
     appearance.colorIndex = 0;
     appearance.colorOverride = true;
-  } else if (lower.includes("viki") || lower.includes("viktoria")) {
+  } else if (flexMatch(["viki", "viktoria", "vito"])) {
     appearance.colorIndex = 5;
     appearance.colorOverride = true;
   }
@@ -58,9 +68,14 @@ export class IntroScene extends BaseScene {
     await ctx.network.ready;
 
     // reseed rng with the server's map seed
-    const mapSeed = ctx.network.mapSeed ?? Math.floor(Math.random() * 0x7fffffff);
+    const mapSeed = ctx.network.mapSeed ??
+      Math.floor(Math.random() * 0x7fffffff);
     ctx.rng = new SeededRandom(mapSeed);
-    ctx.cloudLayer = new CloudLayer(this.canvasW, ctx.assets.environment.clouds, ctx.rng);
+    ctx.cloudLayer = new CloudLayer(
+      this.canvasW,
+      ctx.assets.environment.clouds,
+      ctx.rng,
+    );
 
     this.switchScene(new LobbyScene(ctx));
   }
