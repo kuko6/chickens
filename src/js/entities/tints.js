@@ -29,16 +29,18 @@ const tintCtx = tintCanvas.getContext("2d");
  * @param {number} [alpha=1.0]
  */
 export function drawTintedSprite(ctx, sprite, frameX, frameY, spriteWidth, spriteHeight, x, y, drawWidth, drawHeight, facingRight, tint, alpha = 1.0) {
-  tintCanvas.width = drawWidth;
-  tintCanvas.height = drawHeight;
-  tintCtx.clearRect(0, 0, drawWidth, drawHeight);
+  // Tint at source resolution so fractional sprite sizing is not rasterized
+  // before the viewport applies its own scale.
+  tintCanvas.width = spriteWidth;
+  tintCanvas.height = spriteHeight;
+  tintCtx.clearRect(0, 0, spriteWidth, spriteHeight);
   tintCtx.imageSmoothingEnabled = false;
-  tintCtx.drawImage(sprite, frameX, frameY, spriteWidth, spriteHeight, 0, 0, drawWidth, drawHeight);
+  tintCtx.drawImage(sprite, frameX, frameY, spriteWidth, spriteHeight, 0, 0, spriteWidth, spriteHeight);
 
   if (tint) {
     tintCtx.globalCompositeOperation = "source-atop";
     tintCtx.fillStyle = tint;
-    tintCtx.fillRect(0, 0, drawWidth, drawHeight);
+    tintCtx.fillRect(0, 0, spriteWidth, spriteHeight);
     tintCtx.globalCompositeOperation = "source-over";
   }
 
@@ -49,9 +51,9 @@ export function drawTintedSprite(ctx, sprite, frameX, frameY, spriteWidth, sprit
   if (!facingRight) {
     ctx.translate(x + drawWidth, y);
     ctx.scale(-1, 1);
-    ctx.drawImage(tintCanvas, 0, 0);
+    ctx.drawImage(tintCanvas, 0, 0, drawWidth, drawHeight);
   } else {
-    ctx.drawImage(tintCanvas, x, y);
+    ctx.drawImage(tintCanvas, x, y, drawWidth, drawHeight);
   }
 
   ctx.restore();

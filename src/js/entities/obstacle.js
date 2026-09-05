@@ -1,3 +1,4 @@
+import { CHICKEN_MOVEMENT_SCALE } from "./chicken-scale.js";
 import { createTileRenderer } from "../engine/tile-renderer.js";
 
 /**
@@ -54,15 +55,16 @@ export class Obstacle {
    * @param {import('../entities/chicken.js').Chicken} chicken
    */
   collides(chicken) {
-    if (chicken.airY < -10) return false;
+    if (chicken.airY < -10 * CHICKEN_MOVEMENT_SCALE) return false;
 
     // shrink hitboxes — chicken head is more forgiving, obstacle bottom edge too
     const padX = 6;
-    const chickenTopPad = 16;  // more forgiving head
-    const chickenBottomPad = 4;
-    const cx = chicken.x + padX;
+    const chickenPadX = padX * CHICKEN_MOVEMENT_SCALE;
+    const chickenTopPad = 16 * CHICKEN_MOVEMENT_SCALE;  // more forgiving head
+    const chickenBottomPad = 4 * CHICKEN_MOVEMENT_SCALE;
+    const cx = chicken.x + chickenPadX;
     const cy = chicken.y + chicken.airY + chickenTopPad;
-    const cw = chicken.width - padX * 2;
+    const cw = chicken.width - chickenPadX * 2;
     const ch = chicken.height - chickenTopPad - chickenBottomPad;
 
     // horizontal overlap is shared across all segments

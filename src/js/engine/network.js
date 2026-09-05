@@ -23,13 +23,17 @@ export class NetworkManager {
    * Sets this.ready to a promise that resolves once the server sends the id message, or on failure.
    */
   connect() {
+    this.connectionError = "";
+    this.connected = false;
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     const lobbyId = location.pathname.slice(1);
-    this.ws = new WebSocket(`${protocol}//${location.host}/ws/${lobbyId}`);
+    const socket = new WebSocket(`${protocol}//${location.host}/ws/${lobbyId}`);
+    this.ws = socket;
 
     this.ready = new Promise((resolve) => { this.resolveReady = resolve; });
 
     this.ws.onmessage = (e) => {
+      if (this.ws !== socket) return;
       const data = JSON.parse(e.data);
 
       switch (data.type) {
@@ -39,6 +43,7 @@ export class NetworkManager {
           this.colorIndex = data.colorIndex;
           this.connected = true;
           this.resolveReady?.();
+          this.resolveReady = null;
           this.onId?.(data.colorIndex);
           break;
         case "join":
@@ -84,14 +89,22 @@ export class NetworkManager {
     };
 
     this.ws.onerror = () => {
+      if (this.ws !== socket) return;
+      this.connectionError = "Could not connect to the lobby. Please try again.";
       // resolve ready so the game doesn't hang
       this.resolveReady?.();
       this.resolveReady = null;
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
+      if (this.ws !== socket) return;
       const wasConnected = this.connected;
       this.connected = false;
+      if (!wasConnected) {
+        this.connectionError = event.code === 4001
+          ? "This lobby is already full. Try another lobby or wait for a player to leave."
+          : "Could not connect to the lobby. Please try again.";
+      }
       // resolve ready in case we never got the id message
       this.resolveReady?.();
       this.resolveReady = null;

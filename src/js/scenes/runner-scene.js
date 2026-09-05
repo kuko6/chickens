@@ -1,16 +1,17 @@
+import { CHICKEN_MOVEMENT_SCALE } from "../entities/chicken-scale.js";
 import { Chicken } from "../entities/chicken.js";
 import { Obstacle } from "../entities/obstacle.js";
 import { InputFilter } from "../engine/input-filter.js";
 import { LobbyScene } from "./lobby-scene.js";
 import { BaseScene } from "./base-scene.js";
 
-const BASE_SPEED = 3;
-const ACCEL = 0.002;
-const MAX_SPEED = 20;
+const BASE_SPEED = 3 * CHICKEN_MOVEMENT_SCALE;
+const ACCEL = 0.002 * CHICKEN_MOVEMENT_SCALE;
+const MAX_SPEED = 20 * CHICKEN_MOVEMENT_SCALE;
 const MIN_GAP = 50;
 const MAX_GAP = 500;
 const SAFE_FRAMES = 55;
-const HITBOX_SPAN = 108;
+const HITBOX_SPAN = 48 + 60 * CHICKEN_MOVEMENT_SCALE;
 const DESPAWN_BEHIND = 300;
 
 export class RunnerScene extends BaseScene {
@@ -41,7 +42,7 @@ export class RunnerScene extends BaseScene {
       ids.sort((a, b) => Number(a) - Number(b));
       const slot = ids.indexOf(this.network.id);
       const maxRange = this.chicken.maxY - this.chicken.minY;
-      const gap = Math.min(60, maxRange / (totalPlayers - 1));
+      const gap = Math.min(this.chicken.height, maxRange / (totalPlayers - 1));
       const totalSpan = (totalPlayers - 1) * gap;
       this.chicken.y = midY - totalSpan / 2 + slot * gap;
     }

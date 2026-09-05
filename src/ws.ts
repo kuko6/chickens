@@ -1,4 +1,4 @@
-const MAX_PLAYERS = 6;
+const MAX_PLAYERS = 8;
 
 interface Client {
   ws: WebSocket;
@@ -40,7 +40,7 @@ function deleteLobbyIfEmpty(lobbyId: string) {
   }
 }
 
-/** Returns the lowest unused color index (0–5), or -1 if the lobby is full. */
+/** Returns the lowest unused color index, or -1 if none is available. */
 function claimColorIndex(lobby: Lobby): number {
   const used = new Set<number>();
   for (const { colorIndex } of lobby.clients.values()) {
@@ -64,22 +64,18 @@ function broadcast(lobby: Lobby, message: string, excludeId?: string) {
 /**
  * Upgrades an HTTP request to a WebSocket connection and adds the player to
  * the specified lobby. Handles all game messages (state sync, customization,
- * ready/start) scoped to that lobby. Returns 503 if the lobby is full.
+ * ready/start) scoped to that lobby. Closes with code 4001 if the lobby is full.
  */
 export function handleWebSocket(req: Request, lobbyId: string): Response {
   const lobby = getOrCreateLobby(lobbyId);
-
-  if (lobby.clients.size >= MAX_PLAYERS) {
-    return new Response("Lobby full", { status: 503 });
-  }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   const id = String(lobby.nextId++);
 
   socket.onopen = () => {
     const colorIndex = claimColorIndex(lobby);
-    if (colorIndex === -1) {
-      socket.close(1013, "Lobby full");
+    if (lobby.clients.size >= MAX_PLAYERS || colorIndex === -1) {
+      socket.close(4001, "Lobby full");
       return;
     }
 
@@ -107,6 +103,7 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
   };
 
   socket.onmessage = (e) => {
+    if (!lobby.clients.has(id)) return;
     const data = JSON.parse(e.data);
     data.id = id;
 
@@ -149,7 +146,7 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
   };
 
   socket.onclose = () => {
-    lobby.clients.delete(id);
+    if (!lobby.clients.delete(id)) return;
 
     // reset all ready states when someone leaves
     for (const c of lobby.clients.values()) c.ready = false;
