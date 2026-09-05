@@ -6,30 +6,12 @@ import { IntroScene, applyEasterEggs } from "./scenes/intro-scene.js";
 import { CloudLayer } from "./scenes/cloud-layer.js";
 import { SeededRandom } from "./engine/seeded-random.js";
 import { NetworkSync } from "./engine/network-sync.js";
-
-/**
- * Keep logical game coordinates stable while rendering at device pixel ratio.
- * @param {HTMLCanvasElement} canvas
- * @param {CanvasRenderingContext2D} ctx
- */
-function configureCanvasForHiDPI(canvas, ctx) {
-  const width = canvas.width;
-  const height = canvas.height;
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  return { width, height, dpr };
-}
+import { configureViewport } from "./engine/viewport.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const viewport = configureCanvasForHiDPI(canvas, ctx);
+const viewport = configureViewport(canvas, ctx);
 
 const assets = await loadAssets();
 

@@ -1,3 +1,5 @@
+import { createTileRenderer } from "../engine/tile-renderer.js";
+
 /**
  * Fence obstacle built from a tileset (16x64: 4 tiles of 16x16 stacked).
  * Tile 0 = top edge, tiles 1-2 = random middle, tile 3 = bottom edge.
@@ -32,14 +34,14 @@ export class Obstacle {
     const { tileset, tileSize, drawSize } = this;
 
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    const drawTile = createTileRenderer(ctx);
     for (const seg of this.segments) {
       for (let i = 0; i < seg.tiles.length; i++) {
         const tileIdx = seg.tiles[i];
-        ctx.drawImage(
+        drawTile(
           tileset,
-          tileIdx * tileSize, 0, tileSize, tileSize,
-          screenX, this.y + (seg.startRow + i) * drawSize, drawSize, drawSize,
+          tileIdx * tileSize, 0, tileSize,
+          screenX, this.y + (seg.startRow + i) * drawSize, drawSize,
         );
       }
     }
