@@ -17,6 +17,9 @@ export function configureViewport(canvas, ctx) {
   const resize = () => {
     const scale = host.clientWidth / viewport.width;
     if (scale <= 0) return;
+    // Use the same dimensions for the frame instead of relying on flexbox's
+    // aspect-ratio calculation, which can leave extra space in Safari.
+    host.style.height = `${viewport.height * scale}px`;
     stage.style.transform = `scale(${scale})`;
     viewport.dpr = window.devicePixelRatio || 1;
     const pixelScale = scale * viewport.dpr;
@@ -27,6 +30,7 @@ export function configureViewport(canvas, ctx) {
       canvas.height = height;
     }
     ctx.setTransform(width / viewport.width, 0, 0, height / viewport.height, 0, 0);
+    ctx.imageSmoothingEnabled = false;
   };
 
   new ResizeObserver(resize).observe(host);
