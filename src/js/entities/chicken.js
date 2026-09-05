@@ -1,3 +1,4 @@
+import { CHICKEN_MOVEMENT_SCALE } from "./chicken-scale.js";
 import { BaseChicken } from "./base-chicken.js";
 
 export class Chicken extends BaseChicken {
@@ -12,23 +13,24 @@ export class Chicken extends BaseChicken {
     this.bounds = bounds;
 
     // movement
-    this.speed = 4;
-    this.speedY = 3;
+    this.speed = 4 * CHICKEN_MOVEMENT_SCALE;
+    this.speedY = 3 * CHICKEN_MOVEMENT_SCALE;
     this.velocityX = 0;
     this.velocityY = 0;
-    this.minY = 176;
+    // Preserve the back edge of the walkable area at the chicken’s feet.
+    this.minY = 236 - this.height;
     this.maxY = bounds.height - this.height;
 
     // jump / gravity
-    this.jumpForce = -10;
-    this.gravity = 0.6;
+    this.jumpForce = -10 * CHICKEN_MOVEMENT_SCALE;
+    this.gravity = 0.6 * CHICKEN_MOVEMENT_SCALE;
     this.jumpHoldFrames = 0;
     this.maxJumpHoldFrames = 8;
-    this.jumpHoldBoost = -0.4;
+    this.jumpHoldBoost = -0.4 * CHICKEN_MOVEMENT_SCALE;
 
     // glide
-    this.glideGravity = 0.15;
-    this.glideMaxFallSpeed = 2;
+    this.glideGravity = 0.15 * CHICKEN_MOVEMENT_SCALE;
+    this.glideMaxFallSpeed = 2 * CHICKEN_MOVEMENT_SCALE;
     this.baseGlideFrames = 30;
     this.maxGlideFrames = this.baseGlideFrames;
     this.glideFrames = 0;
@@ -74,7 +76,7 @@ export class Chicken extends BaseChicken {
 
       // glide: hold space while falling to slow descent
       // budget shrinks as game speed increases (3 → 20 maps to 100% → 30% of base)
-      const speedFactor = 1 - 0.7 * Math.min((this.gameSpeed - 3) / 17, 1);
+      const speedFactor = 1 - 0.7 * Math.min((this.gameSpeed / CHICKEN_MOVEMENT_SCALE - 3) / 17, 1);
       this.maxGlideFrames = Math.round(this.baseGlideFrames * speedFactor);
       if (jumpHeld && this.velocityY > 0 && this.glideFrames < this.maxGlideFrames) {
         this.isGliding = true;
@@ -106,6 +108,9 @@ export class Chicken extends BaseChicken {
         }
       }
     }
+
+    // Fractional scaling must not shift the glide transition at the jump apex.
+    if (this.isJumping && Math.abs(this.velocityY) < 1e-10) this.velocityY = 0;
 
     if (this.autoRun) {
       this.facingRight = true;

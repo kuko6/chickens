@@ -1,3 +1,6 @@
+import { CHICKEN_MOVEMENT_SCALE } from "./chicken-scale.js";
+import { createTileRenderer } from "../engine/tile-renderer.js";
+
 /**
  * Fence obstacle built from a tileset (16x64: 4 tiles of 16x16 stacked).
  * Tile 0 = top edge, tiles 1-2 = random middle, tile 3 = bottom edge.
@@ -32,14 +35,14 @@ export class Obstacle {
     const { tileset, tileSize, drawSize } = this;
 
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    const drawTile = createTileRenderer(ctx);
     for (const seg of this.segments) {
       for (let i = 0; i < seg.tiles.length; i++) {
         const tileIdx = seg.tiles[i];
-        ctx.drawImage(
+        drawTile(
           tileset,
-          tileIdx * tileSize, 0, tileSize, tileSize,
-          screenX, this.y + (seg.startRow + i) * drawSize, drawSize, drawSize,
+          tileIdx * tileSize, 0, tileSize,
+          screenX, this.y + (seg.startRow + i) * drawSize, drawSize,
         );
       }
     }
@@ -52,15 +55,16 @@ export class Obstacle {
    * @param {import('../entities/chicken.js').Chicken} chicken
    */
   collides(chicken) {
-    if (chicken.airY < -10) return false;
+    if (chicken.airY < -10 * CHICKEN_MOVEMENT_SCALE) return false;
 
     // shrink hitboxes — chicken head is more forgiving, obstacle bottom edge too
     const padX = 6;
-    const chickenTopPad = 16;  // more forgiving head
-    const chickenBottomPad = 4;
-    const cx = chicken.x + padX;
+    const chickenPadX = padX * CHICKEN_MOVEMENT_SCALE;
+    const chickenTopPad = 16 * CHICKEN_MOVEMENT_SCALE;  // more forgiving head
+    const chickenBottomPad = 4 * CHICKEN_MOVEMENT_SCALE;
+    const cx = chicken.x + chickenPadX;
     const cy = chicken.y + chicken.airY + chickenTopPad;
-    const cw = chicken.width - padX * 2;
+    const cw = chicken.width - chickenPadX * 2;
     const ch = chicken.height - chickenTopPad - chickenBottomPad;
 
     // horizontal overlap is shared across all segments

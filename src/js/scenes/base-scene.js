@@ -1,4 +1,5 @@
 import { ChatOverlay } from "../ui/chat-overlay.js";
+import { createTileRenderer } from "../engine/tile-renderer.js";
 
 export class BaseScene {
   /**
@@ -95,7 +96,7 @@ export class BaseScene {
     const visibleCols = Math.ceil(this.canvasW / drawSize) + 1;
 
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    const drawTile = createTileRenderer(ctx);
     for (let row = 0; row < groundRows; row++) {
       const isEdge = row === 0;
       const tileset = isEdge ? groundEdgeTileset : groundTileset;
@@ -105,15 +106,13 @@ export class BaseScene {
         const hash = this.rng.hash(worldCol, row);
         const tileIdx = hash % tileCount;
         const screenX = worldCol * drawSize - this.cameraX;
-        ctx.drawImage(
+        drawTile(
           tileset,
           tileIdx * tileSize,
           0,
           tileSize,
-          tileSize,
           Math.round(screenX),
           horizonY + row * drawSize,
-          drawSize,
           drawSize,
         );
       }

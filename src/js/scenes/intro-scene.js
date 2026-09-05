@@ -47,7 +47,7 @@ export class IntroScene extends BaseScene {
   enter() {
     this.initGround();
     this.overlay = new IntroOverlay(this.canvas, (name, lobbyCode) => {
-      this.joinLobby(name, lobbyCode);
+      return this.joinLobby(name, lobbyCode);
     }, this.context.lobbyId);
   }
 
@@ -66,6 +66,9 @@ export class IntroScene extends BaseScene {
 
     ctx.network.connect();
     await ctx.network.ready;
+    if (!ctx.network.connected) {
+      throw new Error(ctx.network.connectionError);
+    }
 
     // reseed rng with the server's map seed
     const mapSeed = ctx.network.mapSeed ??

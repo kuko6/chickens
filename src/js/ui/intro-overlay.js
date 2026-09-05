@@ -1,7 +1,7 @@
 export class IntroOverlay {
   /**
    * @param {HTMLCanvasElement} canvas
-   * @param {(name: string, lobbyCode: string) => void} onJoin
+   * @param {(name: string, lobbyCode: string) => Promise<void>} onJoin
    */
   constructor(canvas, onJoin, initialLobbyCode = "") {
     const host = canvas.parentElement;
@@ -100,10 +100,32 @@ export class IntroOverlay {
     const row = this.makeRow();
     const lobbyInput = this.makeInput("lobby code", 16);
     const joinBtn = this.makeButton("Join");
-    joinBtn.addEventListener("click", () => {
+    const errorMessage = document.createElement("div");
+    errorMessage.setAttribute("role", "alert");
+    errorMessage.style.cssText = `
+      max-width: 300px;
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      color: #a52a2a;
+    `;
+    joinBtn.addEventListener("click", async () => {
+      if (joinBtn.disabled) return;
       const name = nameInput.value.trim();
       const code = lobbyInput.value.trim().toLowerCase() || Math.random().toString(36).substring(2, 7);
-      onJoin(name, code);
+      lobbyInput.value = code;
+      errorMessage.textContent = "";
+      joinBtn.disabled = true;
+      joinBtn.textContent = "Joining…";
+      try {
+        await onJoin(name, code);
+      } catch (error) {
+        errorMessage.textContent = error.message || "Could not connect to the lobby. Please try again.";
+      } finally {
+        joinBtn.disabled = false;
+        joinBtn.textContent = "Join";
+      }
     });
     lobbyInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") joinBtn.click();
@@ -124,6 +146,7 @@ export class IntroOverlay {
     card.appendChild(imroEdition);
     card.appendChild(nameInput);
     card.appendChild(row);
+    card.appendChild(errorMessage);
 
     this.root.appendChild(card);
     host.appendChild(this.root);

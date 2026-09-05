@@ -1,3 +1,4 @@
+import { CHICKEN_SPRITE_SCALE } from "./chicken-scale.js";
 import { TINT_COLORS, drawTintedSprite } from "./tints.js";
 
 export class BaseChicken {
@@ -12,8 +13,8 @@ export class BaseChicken {
     this.spriteSetName = "default";
     this.spriteWidth = 20;
     this.spriteHeight = 20;
-    this.width = this.spriteWidth * 3;
-    this.height = this.spriteHeight * 3;
+    this.width = this.spriteWidth * CHICKEN_SPRITE_SCALE;
+    this.height = this.spriteHeight * CHICKEN_SPRITE_SCALE;
 
     this.facingRight = true;
     this.isMoving = false;
@@ -43,8 +44,8 @@ export class BaseChicken {
     this.spriteSetName = name;
     this.spriteWidth = set.spriteWidth;
     this.spriteHeight = set.spriteHeight;
-    this.width = this.spriteWidth * 3;
-    this.height = this.spriteHeight * 3;
+    this.width = this.spriteWidth * CHICKEN_SPRITE_SCALE;
+    this.height = this.spriteHeight * CHICKEN_SPRITE_SCALE;
   }
 
   /** @param {number} colorIndex */
