@@ -1,0 +1,21 @@
+{
+  "name": "chickens",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node server.ts",
+    "build": "node scripts/build.js",
+    "prod": "node server.ts --prod",
+    "test": "node --test \"src/**/*_test.js\""
+  },
+  "dependencies": {
+    "sirv": "^3.0.2",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

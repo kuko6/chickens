@@ -1,14 +1,18 @@
-import { handleWebSocket } from "./ws.ts";
+import { test } from "node:test";
+import { createServer } from "node:http";
+import { once } from "node:events";
+import { handleUpgrade } from "./ws.ts";
 import { NetworkManager } from "./js/engine/network.js";
 
-Deno.test("full lobby reports an error, preserves ready state, and allows retry", async () => {
-  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen() {} }, (req) =>
-    handleWebSocket(req, "capacity-test")
-  );
+test("full lobby reports an error, preserves ready state, and allows retry", async () => {
+  const server = createServer();
+  server.on("upgrade", (req, socket, head) => handleUpgrade(req, socket, head, "capacity-test"));
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
   const previousLocation = Object.getOwnPropertyDescriptor(globalThis, "location");
   Object.defineProperty(globalThis, "location", {
     configurable: true,
-    value: { protocol: "http:", host: `127.0.0.1:${server.addr.port}`, pathname: "/capacity-test" },
+    value: { protocol: "http:", host: `127.0.0.1:${server.address().port}`, pathname: "/capacity-test" },
   });
   const clients = [];
   const connect = async () => {
@@ -51,7 +55,7 @@ Deno.test("full lobby reports an error, preserves ready state, and allows retry"
     if (!rejected.connected || rejected.connectionError) throw Error("Retry failed after a slot opened");
   } finally {
     await Promise.all(clients.map(close));
-    await server.shutdown();
+    server.close();
     if (previousLocation) Object.defineProperty(globalThis, "location", previousLocation);
     else delete globalThis.location;
   }

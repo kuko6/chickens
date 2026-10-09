@@ -1,5 +1,5 @@
 /**
- * Deno HTTP server that routes requests in priority order:
+ * Node HTTP server that routes requests in priority order:
  *  1. `/ws/<lobbyId>` — WebSocket upgrade
  *  2. `/`             — serves `index.html` (intro screen for creating/joining lobbies)
  *  3. `/<lobbyId>`    — serves `index.html`, the client reads the lobby ID from the URL and
@@ -7,34 +7,38 @@
  *  4. everything else — serves static files (js/, assets/, etc.) requested by the client
  */
 
-import { serveDir } from "@std/http/file-server";
-import { handleWebSocket } from "./src/ws.ts";
+import { createServer } from "node:http";
+import sirv from "sirv";
+import { handleUpgrade } from "./src/ws.ts";
 
-const fsRoot = Deno.args.includes("--prod") ? "dist" : ".";
+const fsRoot = process.argv.includes("--prod") ? "dist" : ".";
+const serveStatic = sirv(fsRoot, { dev: fsRoot === ".", etag: true });
 
-Deno.serve({ port: 3000, hostname: "0.0.0.0" }, (req) => {
-  const url = new URL(req.url);
+const server = createServer((req, res) => {
+  const { pathname } = new URL(req.url ?? "/", "http://localhost");
 
-  if (url.pathname.startsWith("/ws/")) {
-    const lobbyId = url.pathname.split("/ws/")[1];
-    if (!lobbyId) {
-      return new Response("Invalid lobby ID", { status: 400 });
-    }
-    return handleWebSocket(req, lobbyId);
+  const path = pathname.slice(1);
+  if (pathname === "/" || (path && !path.includes("/") && !path.includes("."))) {
+    req.url = "/index.html";
   }
 
-  if (url.pathname === "/") {
-    return serveDir(new Request(new URL("/index.html", req.url), req), {
-      fsRoot,
-    });
-  }
-
-  const path = url.pathname.slice(1);
-  if (path && !path.includes("/") && !path.includes(".")) {
-    return serveDir(new Request(new URL("/index.html", req.url), req), {
-      fsRoot,
-    });
-  }
-
-  return serveDir(req, { fsRoot });
+  serveStatic(req, res);
 });
+
+server.on("upgrade", (req, socket, head) => {
+  const { pathname } = new URL(req.url ?? "/", "http://localhost");
+
+  if (!pathname.startsWith("/ws/")) {
+    socket.destroy();
+    return;
+  }
+
+  const lobbyId = pathname.split("/ws/")[1];
+  if (!lobbyId) {
+    socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+    return;
+  }
+  handleUpgrade(req, socket, head, lobbyId);
+});
+
+server.listen(3000, "0.0.0.0");
