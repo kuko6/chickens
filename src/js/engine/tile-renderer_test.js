@@ -1,6 +1,7 @@
+import { test } from "bun:test";
 import { createTileRenderer } from "./tile-renderer.js";
 
-Deno.test("tiles share whole-pixel edges at fractional scales and camera offsets", () => {
+test("tiles share whole-pixel edges at fractional scales and camera offsets", () => {
   for (const scale of [0.45, 0.8, 1, 1.25, 1.33375, 1.8, 2, 3.6]) {
     for (const cameraX of [-53.5, 0, 0.5, 47.9, 800.25]) {
       const rectangles = [];

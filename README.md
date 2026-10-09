@@ -1,6 +1,6 @@
 # ChickenRun
 
-A multiplayer chicken-themed runner game for up to 6 players to race and jump over obstacles. Built with Deno and vanilla JavaScript with HTML Canvas.
+A multiplayer chicken-themed runner game for up to 6 players to race and jump over obstacles. Built with Bun and vanilla JavaScript with HTML Canvas.
 
 ## Controls
 
@@ -28,8 +28,11 @@ The game runs at `localhost:3000`.
 
 ### Development
 
-Requires [Deno](https://deno.com/).
+Requires [Bun](https://bun.sh/).
 
 ```bash
-deno task dev
+bun install
+bun run dev
 ```
+
+Run the tests with `bun test`.

@@ -1,7 +1,15 @@
+import type { Server, ServerWebSocket } from "bun";
+
 const MAX_PLAYERS = 8;
 
+/** Per-connection data attached at upgrade time and available as `ws.data`. */
+export interface SocketData {
+  lobbyId: string;
+  id: string;
+}
+
 interface Client {
-  ws: WebSocket;
+  ws: ServerWebSocket<SocketData>;
   colorIndex: number;
   spriteSet: string;
   name: string;
@@ -62,99 +70,118 @@ function broadcast(lobby: Lobby, message: string, excludeId?: string) {
 }
 
 /**
- * Upgrades an HTTP request to a WebSocket connection and adds the player to
- * the specified lobby. Handles all game messages (state sync, customization,
- * ready/start) scoped to that lobby. Closes with code 4001 if the lobby is full.
+ * Upgrades an HTTP request to a WebSocket connection for the specified lobby.
+ * Returns undefined once the upgrade has been handed to Bun, or an error response.
  */
-export function handleWebSocket(req: Request, lobbyId: string): Response {
-  const lobby = getOrCreateLobby(lobbyId);
-
-  const { socket, response } = Deno.upgradeWebSocket(req);
-  const id = String(lobby.nextId++);
-
-  socket.onopen = () => {
-    const colorIndex = claimColorIndex(lobby);
-    if (lobby.clients.size >= MAX_PLAYERS || colorIndex === -1) {
-      socket.close(4001, "Lobby full");
-      return;
-    }
-
-    lobby.clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "", ready: false });
-    socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed: lobby.mapSeed }));
-    broadcast(lobby, JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }), id);
-
-    // tell the new client about existing players
-    for (const [otherId, other] of lobby.clients) {
-      if (otherId !== id) {
-        socket.send(
-          JSON.stringify({
-            type: "join",
-            id: otherId,
-            colorIndex: other.colorIndex,
-            spriteSet: other.spriteSet,
-            name: other.name,
-          }),
-        );
-      }
-    }
-    console.log(
-      `[${lobbyId}] Player ${id} connected (color ${colorIndex}, ${lobby.clients.size}/${MAX_PLAYERS})`,
-    );
-  };
-
-  socket.onmessage = (e) => {
-    if (!lobby.clients.has(id)) return;
-    const data = JSON.parse(e.data);
-    data.id = id;
-
-    // store player customization on the server
-    if (data.type === "customize") {
-      const client = lobby.clients.get(id);
-      if (client) {
-        if (data.spriteSet !== undefined) client.spriteSet = data.spriteSet;
-        if (data.colorIndex !== undefined) client.colorIndex = data.colorIndex;
-        if (data.name !== undefined) client.name = data.name;
-      }
-    }
-
-    // handle ready check
-    if (data.type === "ready") {
-      const client = lobby.clients.get(id);
-      if (client) {
-        client.ready = !client.ready;
-        broadcast(lobby, JSON.stringify({ type: "ready", id, ready: client.ready }));
-
-        // check if all players are ready
-        if (lobby.clients.size > 0 && [...lobby.clients.values()].every((c) => c.ready)) {
-          const roundSeed = Math.floor(Math.random() * 0x7fffffff);
-          broadcast(lobby, JSON.stringify({ type: "start", roundSeed }));
-
-          // reset ready state
-          for (const c of lobby.clients.values()) c.ready = false;
-        }
-      }
-      return;
-    }
-
-    if (data.type === "chat") {
-      const text = String(data.text ?? "").trim().slice(0, 100);
-      if (text) broadcast(lobby, JSON.stringify({ type: "chat", id, text }));
-      return;
-    }
-
-    broadcast(lobby, JSON.stringify(data), id);
-  };
-
-  socket.onclose = () => {
-    if (!lobby.clients.delete(id)) return;
-
-    // reset all ready states when someone leaves
-    for (const c of lobby.clients.values()) c.ready = false;
-
-    broadcast(lobby, JSON.stringify({ type: "leave", id }));
-    console.log(`[${lobbyId}] Player ${id} disconnected (${lobby.clients.size}/${MAX_PLAYERS})`);
-    deleteLobbyIfEmpty(lobbyId);
-  };
-
-  return response;
+export function handleWebSocket(req: Request, server: Server<SocketData>, lobbyId: string): Response | undefined {
+  if (server.upgrade(req, { data: { lobbyId, id: "" } })) return undefined;
+  return new Response("WebSocket upgrade required", { status: 426 });
 }
+
+/**
+ * Adds the player to the lobby. Closes with code 4001 if the lobby is full.
+ */
+function handleOpen(ws: ServerWebSocket<SocketData>) {
+  const { lobbyId } = ws.data;
+  const lobby = getOrCreateLobby(lobbyId);
+  const id = String(lobby.nextId++);
+  ws.data.id = id;
+
+  const colorIndex = claimColorIndex(lobby);
+  if (lobby.clients.size >= MAX_PLAYERS || colorIndex === -1) {
+    ws.close(4001, "Lobby full");
+    return;
+  }
+
+  lobby.clients.set(id, { ws, colorIndex, spriteSet: "default", name: "", ready: false });
+  ws.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed: lobby.mapSeed }));
+  broadcast(lobby, JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }), id);
+
+  // tell the new client about existing players
+  for (const [otherId, other] of lobby.clients) {
+    if (otherId !== id) {
+      ws.send(
+        JSON.stringify({
+          type: "join",
+          id: otherId,
+          colorIndex: other.colorIndex,
+          spriteSet: other.spriteSet,
+          name: other.name,
+        }),
+      );
+    }
+  }
+  console.log(
+    `[${lobbyId}] Player ${id} connected (color ${colorIndex}, ${lobby.clients.size}/${MAX_PLAYERS})`,
+  );
+}
+
+/** Handles all game messages (state sync, customization, ready/start) scoped to the player's lobby. */
+function handleMessage(ws: ServerWebSocket<SocketData>, message: string | Buffer) {
+  const { lobbyId, id } = ws.data;
+  const lobby = lobbies.get(lobbyId);
+  if (typeof message !== "string" || !lobby?.clients.has(id)) return;
+
+  let data;
+  try {
+    data = JSON.parse(message);
+  } catch {
+    return;
+  }
+  if (typeof data !== "object" || data === null) return;
+  data.id = id;
+
+  // store player customization on the server
+  if (data.type === "customize") {
+    const client = lobby.clients.get(id);
+    if (client) {
+      if (data.spriteSet !== undefined) client.spriteSet = data.spriteSet;
+      if (data.colorIndex !== undefined) client.colorIndex = data.colorIndex;
+      if (data.name !== undefined) client.name = data.name;
+    }
+  }
+
+  // handle ready check
+  if (data.type === "ready") {
+    const client = lobby.clients.get(id);
+    if (client) {
+      client.ready = !client.ready;
+      broadcast(lobby, JSON.stringify({ type: "ready", id, ready: client.ready }));
+
+      // check if all players are ready
+      if (lobby.clients.size > 0 && [...lobby.clients.values()].every((c) => c.ready)) {
+        const roundSeed = Math.floor(Math.random() * 0x7fffffff);
+        broadcast(lobby, JSON.stringify({ type: "start", roundSeed }));
+
+        // reset ready state
+        for (const c of lobby.clients.values()) c.ready = false;
+      }
+    }
+    return;
+  }
+
+  if (data.type === "chat") {
+    const text = String(data.text ?? "").trim().slice(0, 100);
+    if (text) broadcast(lobby, JSON.stringify({ type: "chat", id, text }));
+    return;
+  }
+
+  broadcast(lobby, JSON.stringify(data), id);
+}
+
+/** Removes the player from the lobby and tells everyone else. */
+function handleClose(ws: ServerWebSocket<SocketData>) {
+  const { lobbyId, id } = ws.data;
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby?.clients.delete(id)) return;
+
+  // reset all ready states when someone leaves
+  for (const c of lobby.clients.values()) c.ready = false;
+
+  broadcast(lobby, JSON.stringify({ type: "leave", id }));
+  console.log(`[${lobbyId}] Player ${id} disconnected (${lobby.clients.size}/${MAX_PLAYERS})`);
+  deleteLobbyIfEmpty(lobbyId);
+}
+
+/** Socket handlers to pass as the `websocket` option of `Bun.serve`. */
+export const websocket = { open: handleOpen, message: handleMessage, close: handleClose };
