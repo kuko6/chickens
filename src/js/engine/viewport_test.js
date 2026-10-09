@@ -1,6 +1,7 @@
+import { test } from "node:test";
 import { configureViewport } from "./viewport.js";
 
-Deno.test("viewport keeps canvas, frame, and overlays aligned across resizes and DPR changes", () => {
+test("viewport keeps canvas, frame, and overlays aligned across resizes and DPR changes", () => {
   const originalWindow = globalThis.window;
   const originalObserver = globalThis.ResizeObserver;
   let onResize;

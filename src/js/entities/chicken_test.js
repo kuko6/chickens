@@ -1,3 +1,4 @@
+import { test } from "node:test";
 // Physics tests do not render; provide only the offscreen canvas used at import.
 globalThis.document = { createElement: () => ({ getContext: () => ({}) }) };
 const { Chicken } = await import("./chicken.js");
@@ -12,7 +13,7 @@ function near(actual, expected) {
   if (Math.abs(actual - expected) > 1e-8) throw Error(`Expected ${expected}, got ${actual}`);
 }
 
-Deno.test("small chickens retain size across appearances and proportional diagonal movement", () => {
+test("small chickens retain size across appearances and proportional diagonal movement", () => {
   const chicken = new Chicken({ isDown: (key) => key === "right" || key === "down" }, assets, bounds);
   const remote = new RemoteChicken(assets);
   for (const player of [chicken, remote]) {
@@ -28,7 +29,7 @@ Deno.test("small chickens retain size across appearances and proportional diagon
   near(chicken.maxY + chicken.height, bounds.height);
 });
 
-Deno.test("scaled jumps and glides preserve timing and proportional height at runner speeds", () => {
+test("scaled jumps and glides preserve timing and proportional height at runner speeds", () => {
   for (const speed of [3, 10, 20]) {
     for (const holdFrames of [1, 8, 120]) {
       let frame = 0;
@@ -52,7 +53,7 @@ Deno.test("scaled jumps and glides preserve timing and proportional height at ru
   }
 });
 
-Deno.test("small chicken collides on the ground and clears fences while jumping", () => {
+test("small chicken collides on the ground and clears fences while jumping", () => {
   const chicken = new Chicken({ isDown: () => false }, assets, bounds);
   const fence = new Obstacle(chicken.x, 208, {}, 3, 16, [{ startRow: 0, tiles: [0, 1, 2, 3] }]);
   if (!fence.collides(chicken)) throw Error("Grounded chicken missed fence");

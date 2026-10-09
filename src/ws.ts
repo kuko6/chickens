@@ -1,3 +1,7 @@
+import type { IncomingMessage } from "node:http";
+import type { Duplex } from "node:stream";
+import { WebSocket, WebSocketServer } from "ws";
+
 const MAX_PLAYERS = 8;
 
 interface Client {
@@ -15,6 +19,7 @@ interface Lobby {
 }
 
 const lobbies = new Map<string, Lobby>();
+const wss = new WebSocketServer({ noServer: true });
 
 /** Returns the lobby for the given ID, creating it with a fresh map seed if it doesn't exist. */
 function getOrCreateLobby(lobbyId: string): Lobby {
@@ -63,48 +68,61 @@ function broadcast(lobby: Lobby, message: string, excludeId?: string) {
 
 /**
  * Upgrades an HTTP request to a WebSocket connection and adds the player to
- * the specified lobby. Handles all game messages (state sync, customization,
- * ready/start) scoped to that lobby. Closes with code 4001 if the lobby is full.
+ * the specified lobby. See `handleConnection` for the game protocol.
  */
-export function handleWebSocket(req: Request, lobbyId: string): Response {
-  const lobby = getOrCreateLobby(lobbyId);
+export function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer, lobbyId: string) {
+  wss.handleUpgrade(req, socket, head, (ws) => handleConnection(ws, lobbyId));
+}
 
-  const { socket, response } = Deno.upgradeWebSocket(req);
+/**
+ * Adds an upgraded WebSocket to the specified lobby. Handles all game messages
+ * (state sync, customization, ready/start) scoped to that lobby. Closes with
+ * code 4001 if the lobby is full.
+ */
+export function handleConnection(socket: WebSocket, lobbyId: string) {
+  const lobby = getOrCreateLobby(lobbyId);
   const id = String(lobby.nextId++);
 
-  socket.onopen = () => {
-    const colorIndex = claimColorIndex(lobby);
-    if (lobby.clients.size >= MAX_PLAYERS || colorIndex === -1) {
-      socket.close(4001, "Lobby full");
+  // an unhandled "error" event would otherwise crash the whole server
+  socket.on("error", () => socket.terminate());
+
+  const colorIndex = claimColorIndex(lobby);
+  if (lobby.clients.size >= MAX_PLAYERS || colorIndex === -1) {
+    socket.close(4001, "Lobby full");
+    return;
+  }
+
+  lobby.clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "", ready: false });
+  socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed: lobby.mapSeed }));
+  broadcast(lobby, JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }), id);
+
+  // tell the new client about existing players
+  for (const [otherId, other] of lobby.clients) {
+    if (otherId !== id) {
+      socket.send(
+        JSON.stringify({
+          type: "join",
+          id: otherId,
+          colorIndex: other.colorIndex,
+          spriteSet: other.spriteSet,
+          name: other.name,
+        }),
+      );
+    }
+  }
+  console.log(
+    `[${lobbyId}] Player ${id} connected (color ${colorIndex}, ${lobby.clients.size}/${MAX_PLAYERS})`,
+  );
+
+  socket.on("message", (raw, isBinary) => {
+    if (isBinary || !lobby.clients.has(id)) return;
+    let data;
+    try {
+      data = JSON.parse(raw.toString());
+    } catch {
       return;
     }
-
-    lobby.clients.set(id, { ws: socket, colorIndex, spriteSet: "default", name: "", ready: false });
-    socket.send(JSON.stringify({ type: "id", id, colorIndex, mapSeed: lobby.mapSeed }));
-    broadcast(lobby, JSON.stringify({ type: "join", id, colorIndex, spriteSet: "default", name: "" }), id);
-
-    // tell the new client about existing players
-    for (const [otherId, other] of lobby.clients) {
-      if (otherId !== id) {
-        socket.send(
-          JSON.stringify({
-            type: "join",
-            id: otherId,
-            colorIndex: other.colorIndex,
-            spriteSet: other.spriteSet,
-            name: other.name,
-          }),
-        );
-      }
-    }
-    console.log(
-      `[${lobbyId}] Player ${id} connected (color ${colorIndex}, ${lobby.clients.size}/${MAX_PLAYERS})`,
-    );
-  };
-
-  socket.onmessage = (e) => {
-    if (!lobby.clients.has(id)) return;
-    const data = JSON.parse(e.data);
+    if (typeof data !== "object" || data === null) return;
     data.id = id;
 
     // store player customization on the server
@@ -143,9 +161,9 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
     }
 
     broadcast(lobby, JSON.stringify(data), id);
-  };
+  });
 
-  socket.onclose = () => {
+  socket.on("close", () => {
     if (!lobby.clients.delete(id)) return;
 
     // reset all ready states when someone leaves
@@ -154,7 +172,5 @@ export function handleWebSocket(req: Request, lobbyId: string): Response {
     broadcast(lobby, JSON.stringify({ type: "leave", id }));
     console.log(`[${lobbyId}] Player ${id} disconnected (${lobby.clients.size}/${MAX_PLAYERS})`);
     deleteLobbyIfEmpty(lobbyId);
-  };
-
-  return response;
+  });
 }
