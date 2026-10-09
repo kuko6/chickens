@@ -1,0 +1,14 @@
+{
+  "name": "chickens",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun server.ts",
+    "build": "bun scripts/build.js",
+    "prod": "bun server.ts --prod",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2"
+  }
+}
